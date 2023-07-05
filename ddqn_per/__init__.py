@@ -28,7 +28,7 @@ class DDQN:
         device: torch.device = "cpu",
         input_size: int = None,
         output_size: int = None,
-        policy_kwargs: dict = {"net_arch": [(64, 64)]},
+        policy_kwargs: dict = {"net_arch": [(8, 8)]},
         buffer_size: int = 1_000_000,
         batch_size: int = 32,
         target_update: int = 10_000,
@@ -59,6 +59,9 @@ class DDQN:
                 env.action_space, Discrete
             ), "Only Discrete action space is supported"
             self.output_size = output_size if output_size else env.action_space.n
+
+        # this may break something
+        self.output_size = self.input_size
 
         # Get episode stats
         self.env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=25)
@@ -150,14 +153,19 @@ class DDQN:
 
         torch.save(state_dict, path / f"ddqn_{self.num_timesteps}.pt")
 
-    def _get_learned_action(self, state) -> int:
+    def _get_learned_action(self, state, show_work=False) -> int:
         with torch.no_grad():
-            q_vals = self.controller(torch.tensor(state).float().to(self.device))
+            state_tensor = torch.tensor(state).float().to(self.device)
+            if show_work:
+                print(state_tensor)
+            q_vals = self.controller(state_tensor)
+            if show_work:
+                print(f"my q is {q_vals}")
             # max along the 0th dimension, get the index of the max value, return it
             action = q_vals.max(dim=0)[1].item()
         return action
 
-    def predict(self, state, deterministic: bool = False) -> int:
+    def predict(self, state, deterministic: bool = False, show_work=False) -> int:
         if not deterministic and random.random() <= self.EPSILON:
             # HACK for SDC
             if hasattr(self.env, "discrete_action_space"):
@@ -165,7 +173,7 @@ class DDQN:
             else:
                 return self.env.action_space.sample()
         else:
-            return self._get_learned_action(state)
+            return self._get_learned_action(state, show_work)
 
     def _process_experiences(self, experiences):
         field_order = ("state", "action", "reward", "next_state", "done")

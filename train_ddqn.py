@@ -56,8 +56,78 @@ np.random.seed(args.seed)
 random.seed(args.seed)
 
 # Load env
-env = gym.make(args.env)
+#env = gym.make("gym-PBN/Bittner-28")
+#this one was working
 
+env = gym.make("gym-PBN/PBN-v0",
+               logic_func_data=(
+                   ["u", "x1", "x2", "x3", "x4"],
+                   [
+                       [],
+                       [("x1", 1)],
+                       [("x1 and not x1", 1)],  # perma False
+                       [("x1 and not x1", 1)],  # perma False
+                       [("x4", 1)],
+                   ],
+               ),
+               goal_config={
+                   "all_attractors": [{(0, 0, 0, 1)}, {(0, 0, 0, 0)}, {(1, 0, 0, 1)}, {(1, 0, 0, 0)}],
+                   "target_nodes": {(0, 0, 0, 1)},
+                   "intervene_on": ["x1", "x2", "x3", "x4"]
+               },
+               )
+
+print("gym make")
+
+# this one should be
+# # https://github.com/sybila/biodivine-boolean-models/blob/main/models/%5Bid-095%5D__%5Bvar-9%5D__%5Bin-1%5D__%5BFISSION-YEAST-2008%5D/model.bnet
+# env = gym.make("gym-PBN/PBCN-v0",
+#                logic_func_data=(
+#                    ['u', 'v_Cdc25', 'v_Cdc2_Cdc13', 'v_Cdc2_Cdc13_A', 'v_PP', 'v_Rum1', 'v_SK', 'v_Slp1', 'v_Ste9',
+#                     'v_Wee1_Mik1', 'v_Start'],
+#                    [
+#                        [],
+#                        [(
+#                         " ((((not v_Cdc2_Cdc13  and  v_Cdc25)  and  not v_PP) or ((v_Cdc2_Cdc13  and  not v_Cdc25) and"
+#                         "  not v_PP))  or  (v_Cdc2_Cdc13  and  v_Cdc25))",
+#                         1)],
+#                        [(" ((not v_Ste9  and  not v_Rum1)  and  not v_Slp1)", 1)],
+#                        [(" ((((not v_Ste9  and  not v_Rum1)  and  not v_Slp1)  and  not v_Wee1_Mik1)  and  v_Cdc25)",
+#                          1)],
+#                        [(" v_Slp1", 1)],
+#                        [(
+#                         " ((((((((not v_SK  and  not v_Cdc2_Cdc13)  and  not v_Rum1)  and  "
+#                         "not v_Cdc2_Cdc13_A)  and  v_PP)  or  (((not v_SK  and  not v_Cdc2_Cdc13)  and  v_Rum1)  and "
+#                         " not v_Cdc2_Cdc13_A))  or  ((((not v_SK  and  not v_Cdc2_Cdc13)  and  v_Rum1)  and "
+#                         " v_Cdc2_Cdc13_A)  and  v_PP))  or  ((((not v_SK  and  v_Cdc2_Cdc13)  and  v_Rum1)  and  "
+#                         "not v_Cdc2_Cdc13_A)  and  v_PP))  or  ((((v_SK  and  not v_Cdc2_Cdc13)  and  v_Rum1)  and  "
+#                         "not v_Cdc2_Cdc13_A)  and  v_PP))",
+#                         1)],
+#                        [(" v_Start", 1)],
+#                        [(" v_Cdc2_Cdc13_A", 1)],
+#                        [(
+#                         " ((((((((not v_SK  and  not v_Cdc2_Cdc13)  and  not v_Ste9)  and  not v_Cdc2_Cdc13_A)  and "
+#                         " v_PP)  or  (((not v_SK  and  not v_Cdc2_Cdc13)  and  v_Ste9)  and  not v_Cdc2_Cdc13_A))  or"
+#                         "  ((((not v_SK  and  not v_Cdc2_Cdc13)  and  v_Ste9)  and  v_Cdc2_Cdc13_A)  and  v_PP))  or "
+#                         " ((((not v_SK  and  v_Cdc2_Cdc13)  and  v_Ste9)  and  not v_Cdc2_Cdc13_A)  and  v_PP))  or  "
+#                         "((((v_SK  and  not v_Cdc2_Cdc13)  and  v_Ste9)  and  not v_Cdc2_Cdc13_A)  and  v_PP))",
+#                         1)],
+#                        [(
+#                         " ((((not v_Cdc2_Cdc13  and  not v_Wee1_Mik1)  and  v_PP)  or  (not v_Cdc2_Cdc13  and "
+#                         " v_Wee1_Mik1))  or  ((v_Cdc2_Cdc13  and  v_Wee1_Mik1)  and  v_PP))",
+#                         1)],
+#                        [('v_Start', 1)],
+#                    ],
+#                ),
+#                goal_config={
+#                    "all_attractors": [],
+#                    "target_nodes": {(0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0)},
+#                    "intervene_on": []
+#                },
+#                )
+print("gym made")
+
+print("where is the graph?")
 # set up logs
 TOP_LEVEL_LOG_DIR = Path(args.log_dir)
 TOP_LEVEL_LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -92,7 +162,7 @@ config = model.get_config()
 config["learning_starts"] = args.learning_starts
 run = wandb.init(
     project="pbn-rl",
-    entity="uos-plccn",
+#    entity="uos-plccn",
     sync_tensorboard=True,
     monitor_gym=True,
     config=config,
@@ -114,7 +184,7 @@ if not args.eval_only:
     model.learn(
         total_time_steps,
         learning_starts=args.learning_starts,
-        checkpoint_freq=10_000,
+        checkpoint_freq=500,
         checkpoint_path=checkpoint_path,
         resume_steps=resume_steps,
         log_dir=TOP_LEVEL_LOG_DIR,
@@ -126,6 +196,16 @@ if not args.eval_only:
 print(f"Evaluating...")
 ssd, plot = compute_ssd_hist(env, model, resets=300, iters=100_000, multiprocess=False)
 run.log({"SSD": plot})
+
+from itertools import product
+
+count = 0
+for state in product([0, 1], repeat=5):
+    print(f"for state={state} we got {model.predict(state, deterministic=True, show_work=False)}")
+    count += 1
+    if count > 10:
+        break
+
 
 env.close()
 run.finish()
