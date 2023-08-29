@@ -1,6 +1,7 @@
 import argparse
 import itertools
 import random
+from collections import defaultdict
 from pathlib import Path
 
 import gymnasium as gym
@@ -157,7 +158,7 @@ random.seed(args.seed)
 #                )
 #
 
-env_pbn10 = gym.make("gym-PBN/Bittner-28")
+env_pbn10 = gym.make("gym-PBN/Bittner-7")
 
 env = env_pbn10
 
@@ -259,6 +260,7 @@ run.log({"SSD": plot})
 attrs = env.all_attractors
 target = env.target_nodes
 lens = []
+actions = defaultdict(list)
 
 print("testig the model")
 print(f"target is {target}")
@@ -269,12 +271,13 @@ for attractor in env.env.env.env.all_attractors:
         _ = env.reset()
         _ = env.env.env.env.graph.setState(state)
         count = 0
-        while not state_equals(state, (1, 1, 1, 1, 1, 1, 1, 0, 1, 1)):
+        while not env.in_target(state):
             count += 1
             action = model.predict(state)
+            actions[initial_state].append(action)
             _ = env.step(action)
             state = env.render()
-        print(f"for initial state {initial_state} got {count}")
+        print(f"for initial state {initial_state} got {actions[initial_state]} (total of {count} steps)")
         lens.append(count)
 
 
