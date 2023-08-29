@@ -28,17 +28,19 @@ class DDQN:
         device: torch.device = "cpu",
         input_size: int = None,
         output_size: int = None,
-        policy_kwargs: dict = {"net_arch": [(8, 8)]},
+            policy_kwargs=None,
         buffer_size: int = 1_000_000,
-        batch_size: int = 32,
-        target_update: int = 10_000,
-        gamma=0.99,
+        batch_size: int = 64,
+        target_update: int = 400,
+        gamma=0.8,
         max_epsilon: float = 1.0,
         min_epsilon: float = 0.05,
         exploration_fraction: float = 0.1,
-        learning_rate: float = 0.0001,
+        learning_rate: float = 0.001,
         max_grad_norm: float = 10.0,
     ):
+        if policy_kwargs is None:
+            policy_kwargs = {"net_arch": [(8, 8)]}
         self.device = device
 
         allowed_types = (Discrete, Box, MultiBinary)
@@ -61,7 +63,7 @@ class DDQN:
             self.output_size = output_size if output_size else env.action_space.n
 
         # this may break something
-        self.output_size = self.input_size
+        self.output_size = self.input_size + 1
 
         # Get episode stats
         self.env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=25)
@@ -166,13 +168,19 @@ class DDQN:
         return action
 
     def predict(self, state, deterministic: bool = False, show_work=False) -> int:
+        if not self.env.is_attracting_state(state):
+            return 0
+
         if not deterministic and random.random() <= self.EPSILON:
             # HACK for SDC
             if hasattr(self.env, "discrete_action_space"):
+                #print("has")
                 return self.env.discrete_action_space.sample()
             else:
+                #print("no has")
                 return self.env.action_space.sample()
         else:
+            #print("deterministic")
             return self._get_learned_action(state, show_work)
 
     def _process_experiences(self, experiences):
@@ -246,7 +254,7 @@ class DDQN:
                 "losses/q_values", controller_Q.mean().item(), self.num_timesteps
             )
 
-        return F.smooth_l1_loss(controller_Q, target_Q, reduction=reduction)
+        return F.huber_loss(controller_Q, target_Q, reduction=reduction)
 
     def _back_propagate(self, loss: torch.Tensor):
         """Do a step of back propagation based on a loss vector.
@@ -256,7 +264,7 @@ class DDQN:
         """
         self.optimizer.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.controller.parameters(), self.max_grad_norm)
+        # torch.nn.utils.clip_grad_norm_(self.controller.parameters(), self.max_grad_norm)
         self.optimizer.step()
 
         if self.log and hasattr(self, "wandb"):
@@ -301,10 +309,10 @@ class DDQN:
     def learn(
         self,
         total_steps,
-        learning_starts: int = 50_000,
+        learning_starts: int = 0,
         train_frequency: int = 1,
         checkpoint_freq: int = 25_000,
-        checkpoint_path: str = None,
+        checkpoint_path: str | Path = None,
         resume_steps: int = None,
         log: bool = True,
         run=None,
@@ -333,7 +341,16 @@ class DDQN:
 
         state, _ = self.env.reset()
         for global_step in range(self.num_timesteps, self.train_steps):
+            # if not self.env.is_attracting_state(state):
+            #     raise ValueError("state is not an attractor")
+
+            noop_count = 0
+
             action = self.predict(state)
+
+            if action == 0:
+                noop_count += 1
+
             next_state, reward, terminated, truncated, info = self.env.step(action)
             done = terminated or truncated
 
@@ -346,6 +363,8 @@ class DDQN:
                     print(
                         f"Episode {episodes}: rew_{_len} - {ep_rew_mean}, len_{_len} - {ep_len_mean}"
                     )
+                    print(f"noop count: {noop_count}")
+                    #noop_count = 0
                     self.writer.add_scalar(
                         "rollout/ep_rew_mean",
                         ep_rew_mean,
@@ -370,7 +389,7 @@ class DDQN:
 
             if (
                 self.num_timesteps > learning_starts
-                and len(self.replay_memory) >= self.batch_size
+                # and len(self.replay_memory) >= self.batch_size
                 and global_step % train_frequency == 0
             ):
                 self._learn_step()
@@ -415,7 +434,7 @@ class DDQNPER(DDQN):
         self,
         *args,
         beta: float = 0.4,
-        max_beta: float = 0.4,
+        max_beta: float = 1.0,
         alpha: float = 0.6,
         replay_constant: float = 1e-5,
         beta_fraction: float = 0.75,
@@ -517,3 +536,23 @@ class DDQNPER(DDQN):
         self.BETA_INCREMENT = (self.MAX_BETA - self.MIN_BETA) / (
             self.beta_fraction * self.train_steps
         )
+
+class DDQNSPER(DDQNPER):
+    def __init__(
+        self,
+        *args,
+        beta: float = 0.4,
+        max_beta: float = 1.0,
+        alpha: float = 0.6,
+        replay_constant: float = 1e-5,
+        beta_fraction: float = 0.75,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.BETA = beta
+        self.MIN_BETA = beta
+        self.MAX_BETA = max_beta
+        self.ALPHA = alpha
+        self.REPLAY_CONSTANT = replay_constant
+        self.beta_fraction = beta_fraction
+        self.replay_memory = PrioritisedER(self.buffer_size, self.ALPHA)

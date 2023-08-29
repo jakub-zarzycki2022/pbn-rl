@@ -3,7 +3,11 @@ from typing import Callable, List
 
 
 class SegmentTree:
-    """Implementation of a Segment Tree data structure. Heavily based on https://github.com/openai/baselines/blob/ea25b9e8b234e6ee1bca43083f8f3cf974143998/baselines/common/segment_tree.py."""
+    """
+    Implementation of a Segment Tree data structure.
+    Heavily based on
+    https://github.com/openai/baselines/blob/ea25b9e8b234e6ee1bca43083f8f3cf974143998/baselines/common/segment_tree.py
+    """
 
     def __init__(
         self, size: int, operation: Callable[[object, object], object], identity: object

@@ -1,0 +1,24 @@
+Agent M
+	Vars:
+		{% for gene in log_funcs %}
+		x{{ gene }}: boolean;
+		{% endfor %}
+	end Vars
+	Actions = {none};
+	Protocol:
+		Other: {none};
+	end Protocol
+	Evolution:
+		{% for key in log_funcs %}
+		{% for fun in log_funcs[key] %}
+		x{{ key }}=true if ({{ fun }})=true;
+		x{{ key }}=false if ({{ fun }})=false;
+		{% endfor %}
+		{% endfor %}
+	end Evolution
+end Agent
+
+InitStates
+		M.x234237=true or M.x234237=false;
+end InitStates
+
