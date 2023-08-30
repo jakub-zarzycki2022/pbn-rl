@@ -158,7 +158,7 @@ random.seed(args.seed)
 #                )
 #
 
-env_pbn10 = gym.make("gym-PBN/Bittner-7")
+env_pbn10 = gym.make("gym-PBN/Bittner-28")
 
 env = env_pbn10
 
@@ -254,7 +254,7 @@ if not args.eval_only:
     )
 
 print(f"Evaluating...")
-ssd, plot = compute_ssd_hist(env, model, resets=300, iters=100_000, multiprocess=True)
+ssd, plot = compute_ssd_hist(env, model, resets=1, iters=1, multiprocess=False)
 run.log({"SSD": plot})
 
 attrs = env.all_attractors
