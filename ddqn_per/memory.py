@@ -15,7 +15,7 @@ from .data_structures import MinSegmentTree, SumSegmentTree
 
 #: Named tuple to model a transition sampled from the environment.
 Transition = namedtuple(
-    "Transition", ("state", "action", "reward", "next_state", "done")
+    "Transition", ("state", "target", "action", "reward", "next_state", "done")
 )
 
 

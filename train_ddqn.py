@@ -58,109 +58,8 @@ np.random.seed(args.seed)
 random.seed(args.seed)
 
 # # Load env
-# env_bittner = gym.make("gym-PBN/Bittner-28")
+env = gym.make("gym-PBN/Bittner-28")
 
-# #this one was working
-# env_simple = gym.make("gym-PBN/PBN-v0",
-#                logic_func_data=(
-#                    ["u", "x1", "x2", "x3", "x4"],
-#                    [
-#                        [],
-#                        [("x1", 1)],
-#                        [("False", 1)],  # perma False
-#                        [("False", 1)],  # perma False
-#                        [("x4", 1)],
-#                    ],
-#                ),
-#                goal_config={
-#                    "all_attractors": [],
-#                    "target_nodes": {(0, 0, 0, 0, 1)},
-#                    "intervene_on": ["x1", "x2", "x3", "x4"]
-#                },
-#                )
-
-# print("gym make")
-
-# this one should be
-# https://github.com/sybila/biodivine-boolean-models/blob/main/models/%5Bid-095%5D__%5Bvar-9%5D__%5Bin-1%5D__%5BFISSION-YEAST-2008%5D/model.bnet
-# env_yeast = gym.make(
-#                "gym-PBN/PBN-v0",
-#                name="yeast",
-#                logic_func_data=(
-#                    ['u',
-#                     'v_Cdc25', 'v_Cdc2_Cdc13', 'v_Cdc2_Cdc13_A', 'v_PP', 'v_Rum1',
-#                     'v_SK', 'v_Slp1', 'v_Ste9', 'v_Wee1_Mik1', 'v_Start'],
-#                    [
-#                        [],
-#                        [(
-#                         " ((((not v_Cdc2_Cdc13  and  v_Cdc25)  and  not v_PP) or ((v_Cdc2_Cdc13  and  not v_Cdc25) and"
-#                         "  not v_PP))  or  (v_Cdc2_Cdc13  and  v_Cdc25))",
-#                         1)],
-#                        [(" ((not v_Ste9  and  not v_Rum1)  and  not v_Slp1)", 1)],
-#                        [(" ((((not v_Ste9  and  not v_Rum1)  and  not v_Slp1)  and  not v_Wee1_Mik1)  and  v_Cdc25)",
-#                          1)],
-#                        [(" v_Slp1", 1)],
-#                        [(
-#                         " ((((((((not v_SK  and  not v_Cdc2_Cdc13)  and  not v_Rum1)  and  "
-#                         "not v_Cdc2_Cdc13_A)  and  v_PP)  or  (((not v_SK  and  not v_Cdc2_Cdc13)  and  v_Rum1)  and "
-#                         " not v_Cdc2_Cdc13_A))  or  ((((not v_SK  and  not v_Cdc2_Cdc13)  and  v_Rum1)  and "
-#                         " v_Cdc2_Cdc13_A)  and  v_PP))  or  ((((not v_SK  and  v_Cdc2_Cdc13)  and  v_Rum1)  and  "
-#                         "not v_Cdc2_Cdc13_A)  and  v_PP))  or  ((((v_SK  and  not v_Cdc2_Cdc13)  and  v_Rum1)  and  "
-#                         "not v_Cdc2_Cdc13_A)  and  v_PP))",
-#                         1)],
-#                        [(" v_Start", 1)],
-#                        [(" v_Cdc2_Cdc13_A", 1)],
-#                        [(
-#                         " ((((((((not v_SK  and  not v_Cdc2_Cdc13)  and  not v_Ste9)  and  not v_Cdc2_Cdc13_A)  and "
-#                         " v_PP)  or  (((not v_SK  and  not v_Cdc2_Cdc13)  and  v_Ste9)  and  not v_Cdc2_Cdc13_A))  or"
-#                         "  ((((not v_SK  and  not v_Cdc2_Cdc13)  and  v_Ste9)  and  v_Cdc2_Cdc13_A)  and  v_PP))  or "
-#                         " ((((not v_SK  and  v_Cdc2_Cdc13)  and  v_Ste9)  and  not v_Cdc2_Cdc13_A)  and  v_PP))  or  "
-#                         "((((v_SK  and  not v_Cdc2_Cdc13)  and  v_Ste9)  and  not v_Cdc2_Cdc13_A)  and  v_PP))",
-#                         1)],
-#                        [(
-#                         " ((((not v_Cdc2_Cdc13  and  not v_Wee1_Mik1)  and  v_PP)  or  (not v_Cdc2_Cdc13  and "
-#                         " v_Wee1_Mik1))  or  ((v_Cdc2_Cdc13  and  v_Wee1_Mik1)  and  v_PP))",
-#                         1)],
-#                        [('v_Start', 1)],
-#                    ],
-#                ),
-#                goal_config={
-#                    "all_attractors": [],
-#                    "target_nodes": {(0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0)},
-#                    "intervene_on": []
-#                },
-#                )
-#print("gym made")
-
-# env bittner-7 does not work. I should really look into it
-# TODO: look into it
-# env_melanoma_7 = gym.make("gym-PBN/Bittner-7-v0")
-
-# env_manual_melanoma = gym.make("gym-PBN/PBN-v0",
-#                logic_func_data=(
-#                    ["u", 'x234237', 'x324901', 'x759948', 'x25485', 'x266361', 'x108208', 'x130057'],
-#                    [
-#                         [],
-#                         [('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2)],
-#                         [('x324901 and  not x108208 and  not x130057 and  not x266361', 0.2), ('x324901 and  not x108208 and  not x130057 and  not x266361', 0.2), ('x324901 and  not x108208 and  not x130057 and  not x266361', 0.2), ('( x324901 and  not x108208 and  not x130057 and  not x266361) or  ( not x108208 and  not x130057 and  not x234237 and  not x266361)', 0.2), ('( x324901 and  not x108208 and  not x130057 and  not x266361) or  ( not x108208 and  not x130057 and  not x234237 and  not x266361)', 0.2)],
-#                         [('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2)],
-#                         [('( x25485 and  not x108208 and  not x130057 and  not x266361) or  ( x234237 and  not x108208 and  not x130057 and  not x266361 and  not x759948)', 0.2), ('( x234237 and  not x108208 and  not x130057 and  not x266361) or  ( x25485 and  not x108208 and  not x130057 and  not x266361) or  ( not x108208 and  not x130057 and  not x266361 and  not x759948)', 0.2), ('( x25485 and  not x108208 and  not x130057 and  not x266361) or  ( not x108208 and  not x130057 and  not x266361 and  not x324901 and  not x759948)', 0.2), ('( x25485 and  not x108208 and  not x130057 and  not x266361) or  ( x234237 and  not x108208 and  not x130057 and  not x266361 and  not x324901 and  not x759948)', 0.2), ('( x25485 and  not x108208 and  not x130057 and  not x266361) or  ( x234237 and  not x108208 and  not x130057 and  not x266361 and  not x759948)', 0.2)],
-#                         [('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2)],
-#                         [('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2)],
-#                         [('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2), ('not x108208 and  not x130057 and  not x266361', 0.2)],
-#                    ],
-#                ),
-#                goal_config={
-#                    "all_attractors": [],
-#                    "target_nodes": {(0, 1, 0, 0, 0, 0, 0, 0)},
-#                    "intervene_on": ['x234237', 'x234237', 'x759948', 'x25485', 'x266361', 'x108208', 'x130057']
-#                },
-#                )
-#
-
-env_pbn10 = gym.make("gym-PBN/Bittner-28")
-
-env = env_pbn10
 
 print("where is the graph?")
 # set up logs
@@ -203,10 +102,10 @@ if args.hyperparams:
 
 print(hyperparams)
 hyperparams["policy_kwargs"] = {"net_arch": [(50, 50)]}
-hyperparams["buffer_size"]: int = 64
+hyperparams["buffer_size"]: int = 256
 hyperparams["batch_size"]: int = 64
 hyperparams["target_update"]: int = 512
-hyperparams["gamma"] = 0.9
+hyperparams["gamma"] = 0.95
 hyperparams["max_epsilon"]: float = 1.0
 hyperparams["min_epsilon"]: float = 0.05
 hyperparams["exploration_fraction"]: float = 0.1
@@ -258,14 +157,15 @@ ssd, plot = compute_ssd_hist(env, model, resets=1, iters=1, multiprocess=False)
 run.log({"SSD": plot})
 
 attrs = env.all_attractors
-target = env.target_nodes
-lens = []
-actions = defaultdict(list)
 
 print("testig the model")
-print(f"target is {target}")
-for attractor in env.env.env.env.all_attractors:
+lens = []
+
+for attractor, target in itertools.product(env.env.env.env.all_attractors, repeat=2):
+    _ = env.env.env.env.setTarget(target)
+    target_state = [0 if i == '*' else i for i in random.choice(target)]
     for initial_state in attractor:
+        actions = []
         state = initial_state
         state = [0 if i == '*' else i for i in list(state)]
         _ = env.reset()
@@ -273,13 +173,16 @@ for attractor in env.env.env.env.all_attractors:
         count = 0
         while not env.in_target(state):
             count += 1
-            action = model.predict(state)
-            actions[initial_state].append(action)
+            action = model.predict(state, target_state)
+            actions.append(action)
             _ = env.step(action)
             state = env.render()
-        print(f"for initial state {initial_state} got {actions[initial_state]} (total of {count} steps)")
-        lens.append(count)
-
+            if count > 100:
+                print(f"failed to converge for initial state {initial_state}")
+                break
+        else:
+            print(f"for initial state {initial_state} and target {target} got {actions} (total of {count} steps)")
+            lens.append(count)
 
 env.close()
 run.finish()

@@ -15,7 +15,7 @@ from torch.nn import functional as F
 from torch.utils.tensorboard import SummaryWriter
 
 from .memory import ExperienceReplay, PrioritisedER, Transition
-from .network import DQN
+from .network import DQN, BDQ_base
 from ddqn_per.types import Minibatch, PERMinibatch
 
 
@@ -28,7 +28,7 @@ class DDQN:
         device: torch.device = "cpu",
         input_size: int = None,
         output_size: int = None,
-            policy_kwargs=None,
+        policy_kwargs=None,
         buffer_size: int = 1_000_000,
         batch_size: int = 64,
         target_update: int = 400,
@@ -61,9 +61,6 @@ class DDQN:
                 env.action_space, Discrete
             ), "Only Discrete action space is supported"
             self.output_size = output_size if output_size else env.action_space.n
-
-        # this may break something
-        self.output_size = self.input_size + 1
 
         # Get episode stats
         self.env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=25)
@@ -155,22 +152,20 @@ class DDQN:
 
         torch.save(state_dict, path / f"ddqn_{self.num_timesteps}.pt")
 
-    def _get_learned_action(self, state, show_work=False) -> int:
+    def _get_learned_action(self, state, target, show_work=False) -> int:
         with torch.no_grad():
             state_tensor = torch.tensor(state).float().to(self.device)
+            target_tensor = torch.tensor(target).float().to(self.device)
             if show_work:
                 print(state_tensor)
-            q_vals = self.controller(state_tensor)
+            q_vals = self.controller(state_tensor, target_tensor)
             if show_work:
                 print(f"my q is {q_vals}")
             # max along the 0th dimension, get the index of the max value, return it
             action = q_vals.max(dim=0)[1].item()
         return action
 
-    def predict(self, state, deterministic: bool = False, show_work=False) -> int:
-        if not self.env.is_attracting_state(state):
-            return 0
-
+    def predict(self, state, target, deterministic: bool = False, show_work=False) -> int:
         if not deterministic and random.random() <= self.EPSILON:
             # HACK for SDC
             if hasattr(self.env, "discrete_action_space"):
@@ -181,17 +176,19 @@ class DDQN:
                 return self.env.action_space.sample()
         else:
             #print("deterministic")
-            return self._get_learned_action(state, show_work)
+            return self._get_learned_action(state, target, show_work)
 
     def _process_experiences(self, experiences):
-        field_order = ("state", "action", "reward", "next_state", "done")
+        field_order = ("state", "target", "action", "reward", "next_state", "done")
         assert experiences[0]._fields == field_order, "Invalid experiences"
 
-        states, actions, rewards, next_states, dones = zip(*experiences)
+        states, targets, actions, rewards, next_states, dones = zip(*experiences)
 
         # Load to device
-        states = (
-            torch.tensor(np.array(states))
+        states = torch.tensor(np.array(states)).float().to(self.device).view(self.batch_size, self.input_size)
+
+        targets = (
+            torch.tensor(np.array(targets))
             .float()
             .to(self.device)
             .view(self.batch_size, self.input_size)
@@ -206,7 +203,7 @@ class DDQN:
         )
         dones = torch.tensor(dones).float().to(self.device).unsqueeze(1)
 
-        return (states, actions, rewards, next_states, dones)
+        return (states, targets, actions, rewards, next_states, dones)
 
     def _fetch_minibatch(self) -> Minibatch:
         """Fetch a minibatch from the replay memory and load it into the chosen device.
@@ -221,6 +218,7 @@ class DDQN:
     def _get_loss(
         self,
         states: torch.Tensor,
+        targets: torch.Tensor,
         actions: torch.Tensor,
         rewards: torch.Tensor,
         next_states: torch.Tensor,
@@ -232,6 +230,7 @@ class DDQN:
         Args:
             states (torch.Tensor): the batch of states.
             actions (torch.Tensor): the batch of agent.
+            targets (torch.Tensor): the batch of targets
             rewards (torch.Tensor): the batch of rewards received.
             next_states (torch.Tensor): the batch of the resulting states.
             dones (torch.Tensor): the batch of done flags.
@@ -242,13 +241,13 @@ class DDQN:
         """
         # Calculate predicted actions
         with torch.no_grad():
-            action_prime = self.controller(next_states).max(dim=1)[1].unsqueeze(1)
+            action_prime = self.controller(next_states, targets).max(dim=1)[1].unsqueeze(1)
             target_Q = rewards + (1 - dones) * self.gamma * self.target(
-                next_states
+                next_states, targets
             ).gather(1, action_prime)
 
         # Calculate current and target Q to calculate loss
-        controller_Q = self.controller(states).gather(1, actions)
+        controller_Q = self.controller(states, targets).gather(1, actions)
         if self.log:
             self.writer.add_scalar(
                 "losses/q_values", controller_Q.mean().item(), self.num_timesteps
@@ -339,14 +338,15 @@ class DDQN:
 
         episodes = 0
 
-        state, _ = self.env.reset()
+        self.env.n_steps = 0
+        (state, target), _ = self.env.reset()
         for global_step in range(self.num_timesteps, self.train_steps):
             # if not self.env.is_attracting_state(state):
             #     raise ValueError("state is not an attractor")
 
             noop_count = 0
 
-            action = self.predict(state)
+            action = self.predict(state, target)
 
             if action == 0:
                 noop_count += 1
@@ -380,6 +380,7 @@ class DDQN:
             self.replay_memory.store(
                 Transition(
                     state=state,
+                    target=target,
                     action=action,
                     reward=reward,
                     next_state=next_state,
@@ -399,7 +400,7 @@ class DDQN:
 
             state = next_state
             if done:
-                state, _ = self.env.reset()
+                (state, target), _ = self.env.reset()
 
         # Cleanup
         if log:
@@ -536,23 +537,3 @@ class DDQNPER(DDQN):
         self.BETA_INCREMENT = (self.MAX_BETA - self.MIN_BETA) / (
             self.beta_fraction * self.train_steps
         )
-
-class DDQNSPER(DDQNPER):
-    def __init__(
-        self,
-        *args,
-        beta: float = 0.4,
-        max_beta: float = 1.0,
-        alpha: float = 0.6,
-        replay_constant: float = 1e-5,
-        beta_fraction: float = 0.75,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-        self.BETA = beta
-        self.MIN_BETA = beta
-        self.MAX_BETA = max_beta
-        self.ALPHA = alpha
-        self.REPLAY_CONSTANT = replay_constant
-        self.beta_fraction = beta_fraction
-        self.replay_memory = PrioritisedER(self.buffer_size, self.ALPHA)

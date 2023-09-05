@@ -20,22 +20,24 @@ class DQN(nn.Module):
             height (int): number of nodes in the hidden layer of the NN. Arbitrary.
         """
         super().__init__()
-        self.input = nn.Linear(input_size, net_arch[0][0], bias=True)
+        # self.input = nn.Linear(input_size, net_arch[0][0], bias=True)
+        self.input = nn.Bilinear(input_size, input_size, net_arch[0][0], bias=True)
         self.linears = nn.ModuleList(
             [nn.Linear(arch[0], arch[1], bias=True) for arch in net_arch]
         )
         self.output = nn.Linear(self.linears[-1].out_features, output_size, bias=True)
 
-    def forward(self, x: List[Number]) -> List[float]:
+    def forward(self, state: List[Number], target) -> List[float]:
         """A forward-pass of the neural network.
 
         Args:
-            x (List[Number]): Network input. The PBN state in this case.
+            state (List[Number]) : Network input. The PBN state in this case.
+            target (List[Number]): Target state
 
         Returns:
             List[float]: The network output. Value at index A is the expected cumulative reward if action A is taken.
         """
-        x = F.relu(self.input(x))
+        x = F.relu(self.input(state, target))
         for linear in self.linears:
             x = F.relu(linear(x))
         return self.output(x)
