@@ -48,7 +48,7 @@ class BranchingDQN(nn.Module):
             x = torch.tensor([[state], [target]], dtype=torch.float)
             out = self.q(x).squeeze(0)
             action = torch.argmax(out, dim=1)
-            return list(set(action))
+            return list(action)
 
     def update_policy(self, adam, memory, batch_size):
         x = memory.sample(batch_size)
@@ -67,7 +67,7 @@ class BranchingDQN(nn.Module):
         current_q_values = qvals.gather(2, actions).squeeze(-1)
 
         with torch.no_grad():
-            next_input_tuple = torch.stack((states, targets))
+            next_input_tuple = torch.stack((next_states, targets))
             argmax = torch.argmax(self.q(next_input_tuple), dim=2)
 
             max_next_q_vals = self.target(next_input_tuple).gather(2, argmax.unsqueeze(2)).squeeze(-1)

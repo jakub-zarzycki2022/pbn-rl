@@ -43,8 +43,8 @@ class AgentConfig:
 
     def __init__(self,
                  epsilon_start=1.,
-                 epsilon_final=0.01,
-                 epsilon_decay=8000,
+                 epsilon_final=0.001,
+                 epsilon_decay=5000,
                  gamma=0.9,
                  learning_rate=1e-4,
                  bins=7,
