@@ -15,7 +15,7 @@ from torch.nn import functional as F
 from torch.utils.tensorboard import SummaryWriter
 
 from .memory import ExperienceReplay, PrioritisedER, Transition
-from .network import DQN, BDQ_base
+from .network import DQN
 from ddqn_per.types import Minibatch, PERMinibatch
 
 
@@ -132,7 +132,6 @@ class DDQN:
             "policy_kwargs": self.policy_kwargs,
             "input_size": self.input_size,
             "output_size": self.output_size,
-            "gamma": self.gamma,
             "buffer_size": self.buffer_size,
             "batch_size": self.batch_size,
             "epsilon": self.EPSILON,
