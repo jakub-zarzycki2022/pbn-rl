@@ -95,7 +95,8 @@ print(checkpoint_path)
 
 model.learn(
     env=env,
-    path=checkpoint_path
+    path=checkpoint_path,
+    wandb=run
 )
 
 attrs = env.all_attractors

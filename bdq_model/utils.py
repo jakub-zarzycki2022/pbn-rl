@@ -44,13 +44,13 @@ class AgentConfig:
     def __init__(self,
                  epsilon_start=1.,
                  epsilon_final=0.001,
-                 epsilon_decay=5000,
-                 gamma=0.9,
+                 epsilon_decay=10_000,
+                 gamma=0.95,
                  learning_rate=1e-4,
                  bins=7,
                  target_net_update_freq=1000,
                  memory_size=1024,
-                 batch_size=64,
+                 batch_size=128,
                  learning_starts=64,
                  time_steps=10_000_000):
 
@@ -68,7 +68,7 @@ class AgentConfig:
         self.memory_size = memory_size
         self.batch_size = batch_size
 
-        self.learning_starts = learning_starts
+        self.learning_starts = max(learning_starts, batch_size)
         self.time_steps = time_steps
         self.bins = bins
 

@@ -98,6 +98,7 @@ class BranchingDQN(nn.Module):
     def learn(self,
               env,
               path,
+              wandb,
               ):
 
         config = self.config
@@ -134,6 +135,8 @@ class BranchingDQN(nn.Module):
                 p_bar.set_description('Rew: {:.3f}'.format(ep_reward))
                 rew_recap.append(ep_reward)
                 len_recap.append(ep_len)
+                wandb.log({"episode_len": ep_len,
+                           "episode_reward": ep_reward,})
                 ep_reward = 0.
                 ep_len = 0
 
@@ -157,6 +160,10 @@ class BranchingDQN(nn.Module):
             if frame % 1000 == 0:
                 print(f"Average episode reward: {np.average(rew_recap)}")
                 print(f"Avg len: {np.average(len_recap)}")
+
+                wandb.log({"Avg episode reward": np.average(rew_recap),
+                           "Avg episode length": np.average(len_recap)})
+                
                 rew_recap = []
                 len_recap = []
                 self.save(f"{path}/bdq_{frame}.pt")
