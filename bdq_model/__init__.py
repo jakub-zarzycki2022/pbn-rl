@@ -58,7 +58,7 @@ class BranchingDQN(nn.Module):
 
         states = torch.tensor(np.stack(b_states), device=self.config.device).float()
         targets = torch.tensor(np.stack(b_targets), device=self.config.device).float()
-        actions = torch.tensor(torch.stack(b_actions), device=self.config.device).long().reshape(states.shape[0], -1, 1)
+        actions = torch.stack(b_actions).long().reshape(states.shape[0], -1, 1)
         rewards = torch.tensor(np.stack(b_rewards), device=self.config.device).float().reshape(-1, 1)
         next_states = torch.tensor(np.stack(b_next_states), device=self.config.device).float()
         masks = torch.tensor(np.stack(b_masks), device=self.config.device).float().reshape(-1, 1)
