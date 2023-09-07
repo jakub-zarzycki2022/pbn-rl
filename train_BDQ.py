@@ -45,9 +45,6 @@ parser.add_argument("--env", type=str, help="the environment to run.")
 parser.add_argument("--log-dir", default="logs", help="path to save logs")
 
 args = parser.parse_args()
-use_cuda = torch.cuda.is_available()
-DEVICE = torch.device("cuda" if use_cuda else "cpu")
-print(f"Training on {DEVICE}")
 
 # # Load env
 env = gym.make(f"gym-PBN/BittnerMulti-{args.size}")
@@ -70,7 +67,6 @@ def get_latest_checkpoint():
     else:
         return None
 
-
 def state_equals(state1, state2):
     for i in range(len(state2)):
         if state1[i] != state2[i]:
@@ -82,6 +78,7 @@ config = AgentConfig()
 
 state_len = env.observation_space.shape[0]
 model = BranchingDQN((state_len, state_len), state_len + 1, config)
+model.to(device=model.config.device)
 
 # config = model.get_config()
 # config["learning_starts"] = args.learning_starts
@@ -121,17 +118,18 @@ for attractor, target in itertools.product(env.env.env.env.all_attractors, repea
         while not env.in_target(state):
             count += 1
             action = model.predict(state, target_state)
-            actions.append(action)
+            actions.append(np.unique(action))
             _ = env.step(action)
             state = env.render()
             if count > 100:
                 print(f"failed to converge for initial state {initial_state}")
                 break
         else:
-            print(f"for initial state {initial_state} and target {target} got {actions} (total of {count} steps)")
+            print(f"for initial state {initial_state} and target {target} got ")
+            for action in actions:
+                print(action)
+            print(f"total of {count} steps)")
             lens.append(count)
-
-
 
 env.close()
 run.finish()

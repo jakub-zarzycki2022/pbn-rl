@@ -52,7 +52,7 @@ class AgentConfig:
                  memory_size=1024,
                  batch_size=64,
                  learning_starts=64,
-                 time_steps=100_000):
+                 time_steps=10_000_000):
 
         self.epsilon_start = epsilon_start
         self.epsilon_final = epsilon_final
@@ -71,6 +71,10 @@ class AgentConfig:
         self.learning_starts = learning_starts
         self.time_steps = time_steps
         self.bins = bins
+
+        use_cuda = torch.cuda.is_available()
+        self.device = torch.device("cuda" if use_cuda else "cpu")
+        print(f"Training on {self.device}")
 
 
 class ExperienceReplayMemory:

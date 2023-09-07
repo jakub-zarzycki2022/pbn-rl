@@ -45,7 +45,9 @@ class BranchingDQN(nn.Module):
     def predict(self, state, target):
         with torch.no_grad():
             # a = self.q(x).max(1)[1]
-            x = torch.tensor([[state], [target]], dtype=torch.float)
+            s = np.stack((state, target))
+            x = torch.tensor(s, dtype=torch.float, device=self.config.device).unsqueeze(1)
+
             out = self.q(x).squeeze(0)
             action = torch.argmax(out, dim=1)
             return list(action)
@@ -54,12 +56,12 @@ class BranchingDQN(nn.Module):
         x = memory.sample(batch_size)
         b_states, b_targets, b_actions, b_rewards, b_next_states, b_masks = zip(*x)
 
-        states = torch.tensor(b_states).float()
-        targets = torch.tensor(b_targets).float()
-        actions = torch.tensor(b_actions).long().reshape(states.shape[0], -1, 1)
-        rewards = torch.tensor(b_rewards).float().reshape(-1, 1)
-        next_states = torch.tensor(b_next_states).float()
-        masks = torch.tensor(b_masks).float().reshape(-1, 1)
+        states = torch.tensor(np.stack(b_states), device=self.config.device).float()
+        targets = torch.tensor(np.stack(b_targets), device=self.config.device).float()
+        actions = torch.tensor(np.stack(b_actions), device=self.config.device).long().reshape(states.shape[0], -1, 1)
+        rewards = torch.tensor(np.stack(b_rewards), device=self.config.device).float().reshape(-1, 1)
+        next_states = torch.tensor(np.stack(b_next_states), device=self.config.device).float()
+        masks = torch.tensor(np.stack(b_masks), device=self.config.device).float().reshape(-1, 1)
 
         input_tuple = torch.stack((states, targets))
         qvals = self.q(input_tuple)
