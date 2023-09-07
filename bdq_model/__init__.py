@@ -50,7 +50,7 @@ class BranchingDQN(nn.Module):
 
             out = self.q(x).squeeze(0)
             action = torch.argmax(out, dim=1)
-            return list(action)
+            return action
 
     def update_policy(self, adam, memory, batch_size):
         x = memory.sample(batch_size)
@@ -119,9 +119,10 @@ class BranchingDQN(nn.Module):
             if np.random.random() > epsilon:
                 action = self.predict(state, target)
             else:
-                action = np.random.randint(0, self.action_count, size=config.bins)
+                action = torch.tensor(np.random.randint(0, self.action_count, size=config.bins))
 
-            new_state, reward, terminated, truncated, infos = env.step(action)
+            env_action = list(action.unique())
+            new_state, reward, terminated, truncated, infos = env.step(env_action)
             done = terminated | truncated
             ep_reward += reward
             ep_len += 1
