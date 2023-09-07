@@ -119,7 +119,8 @@ class BranchingDQN(nn.Module):
             if np.random.random() > epsilon:
                 action = self.predict(state, target)
             else:
-                action = torch.tensor(np.random.randint(0, self.action_count, size=config.bins))
+                action = torch.tensor(np.random.randint(0, self.action_count, size=config.bins),
+                                      device=self.config.device)
 
             env_action = list(action.unique())
             new_state, reward, terminated, truncated, infos = env.step(env_action)
