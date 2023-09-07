@@ -31,8 +31,8 @@ class BranchingDQN(nn.Module):
 
         assert self.action_count == self.state_size + 1
 
-        self.q = BranchingQNetwork(observation, ac, config.bins)
-        self.target = BranchingQNetwork(observation, ac, config.bins)
+        self.q = BranchingQNetwork(observation, ac, config.bins).to(device=config.device)
+        self.target = BranchingQNetwork(observation, ac, config.bins).to(device=config.device)
 
         self.target.load_state_dict(self.q.state_dict())
 
@@ -49,7 +49,7 @@ class BranchingDQN(nn.Module):
             x = torch.tensor(s, dtype=torch.float, device=self.config.device).unsqueeze(1)
 
             out = self.q(x).squeeze(0)
-            action = torch.argmax(out, dim=1)
+            action = torch.argmax(out, dim=1).to(self.config.device)
             return action
 
     def update_policy(self, adam, memory, batch_size):
