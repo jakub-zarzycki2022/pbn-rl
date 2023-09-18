@@ -60,6 +60,8 @@ class BranchingQNetwork(nn.Module):
         self.model = nn.Sequential(MyBilinear(state, target, 128),
                                    nn.ReLU(),
                                    nn.Linear(128, 128),
+                                   nn.ReLU(),
+                                   nn.Linear(128, 128),
                                    nn.ReLU())
 
         self.value_head = nn.Linear(128, 1)

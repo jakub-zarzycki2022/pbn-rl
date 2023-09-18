@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -41,15 +43,37 @@ class BranchingDQN(nn.Module):
         self.update_counter = 0
 
         self.MIN_EPSILON = 0.05
+        self.action_lookup_prob = 0.
+        self.MAX_EPSILON = config.epsilon_start
+        self.EPSILON_DECREMENT = (self.MAX_EPSILON - self.MIN_EPSILON) / (1 * config.time_steps)
+
+        # maps (state, target) to (min_known_distance, first_action_taken)
+        self.action_lookup = defaultdict((lambda: (100, 0)))
+        self.first_action = None
 
     def predict(self, state, target):
         with torch.no_grad():
             # a = self.q(x).max(1)[1]
-            s = np.stack((state, target))
-            x = torch.tensor(s, dtype=torch.float, device=self.config.device).unsqueeze(1)
 
-            out = self.q(x).squeeze(0)
-            action = torch.argmax(out, dim=1).to(self.config.device)
+            epsilon = self.decrement_epsilon()
+            if np.random.random() < epsilon:
+                action = torch.tensor(np.random.randint(0, self.action_count, size=self.config.bins),
+                                      device=self.config.device)
+            else:
+                s = np.stack((state, target))
+                x = torch.tensor(s, dtype=torch.float, device=self.config.device).unsqueeze(1)
+
+                out = self.q(x).squeeze(0)
+                action = torch.argmax(out, dim=1).to(self.config.device)
+
+                min_distance, best_action = self.action_lookup[(tuple(state), tuple(target))]
+
+                if min_distance < 10 and np.random.random() < self.action_lookup_prob:
+                    action = best_action
+
+            if self.first_action is None:
+                self.first_action = action
+
             return action
 
     def update_policy(self, adam, memory, batch_size):
@@ -92,8 +116,12 @@ class BranchingDQN(nn.Module):
 
     def decrement_epsilon(self):
         """Decrement the exploration rate."""
-        self.EPSILON = max(self.MIN_EPSILON, self.EPSILON * 0.9)
+        self.EPSILON = max(self.MIN_EPSILON, self.EPSILON - self.EPSILON_DECREMENT)
         return self.EPSILON
+
+    def increase_action_lookup_prob(self):
+        self.action_lookup_prob = min(self.EPSILON_DECREMENT + self.EPSILON_DECREMENT, 0.7)
+        return self.action_lookup_prob
 
     def learn(self,
               env,
@@ -115,30 +143,13 @@ class BranchingDQN(nn.Module):
         p_bar = tqdm(total=config.time_steps)
         for frame in range(config.time_steps):
 
-            epsilon = self.decrement_epsilon()
-
-            if np.random.random() > epsilon:
-                action = self.predict(state, target)
-            else:
-                action = torch.tensor(np.random.randint(0, self.action_count, size=config.bins),
-                                      device=self.config.device)
+            action = self.predict(state, target)
 
             env_action = list(action.unique())
             new_state, reward, terminated, truncated, infos = env.step(env_action)
             done = terminated | truncated
             ep_reward += reward
             ep_len += 1
-
-            if done:
-                (new_state, target), _ = env.reset()
-                recap.append(ep_reward)
-                p_bar.set_description('Rew: {:.3f}'.format(ep_reward))
-                rew_recap.append(ep_reward)
-                len_recap.append(ep_len)
-                wandb.log({"episode_len": ep_len,
-                           "episode_reward": ep_reward,})
-                ep_reward = 0.
-                ep_len = 0
 
             memory.store(Transition(
                 state,
@@ -149,7 +160,27 @@ class BranchingDQN(nn.Module):
                 done
             ))
 
-            # memory.push((s.reshape(-1).numpy().tolist(), action, reward, new_state.reshape(-1).numpy().tolist(), 0. if done else 1.))
+            if done:
+                # noinspection PyTypeChecker
+                distance, _ = self.action_lookup[(tuple(state), tuple(target))]
+
+                if ep_len < distance:
+                    self.action_lookup[(tuple(state), tuple(target))] = (ep_len, self.first_action)
+
+                env.env.env.env.rework_probas(ep_len)
+
+                (new_state, target), _ = env.reset()
+
+                self.first_action = None
+                recap.append(ep_reward)
+                p_bar.set_description('Rew: {:.3f}'.format(ep_reward))
+                rew_recap.append(ep_reward)
+                len_recap.append(ep_len)
+                wandb.log({"episode_len": ep_len,
+                           "episode_reward": ep_reward,})
+                ep_reward = 0.
+                ep_len = 0
+
             state = new_state
 
             p_bar.update(1)

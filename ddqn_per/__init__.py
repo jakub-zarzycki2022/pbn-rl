@@ -2,6 +2,7 @@
 main.py - This module holds the actual Agent.
 """
 import random
+from collections import defaultdict
 from math import prod
 from pathlib import Path
 
@@ -262,7 +263,7 @@ class DDQN:
         """
         self.optimizer.zero_grad()
         loss.backward()
-        # torch.nn.utils.clip_grad_norm_(self.controller.parameters(), self.max_grad_norm)
+        torch.nn.utils.clip_grad_norm_(self.controller.parameters(), self.max_grad_norm)
         self.optimizer.step()
 
         if self.log and hasattr(self, "wandb"):

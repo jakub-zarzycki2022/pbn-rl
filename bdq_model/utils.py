@@ -21,10 +21,7 @@ def arguments():
 
 def save(agent, rewards, args):
     path = './runs/{}/'.format(args.env)
-    try:
-        os.makedirs(path)
-    except:
-        pass
+    os.makedirs(path, exist_ok=True)
 
     torch.save(agent.q.state_dict(), os.path.join(path, 'model_state_dict'))
 
@@ -43,17 +40,16 @@ class AgentConfig:
 
     def __init__(self,
                  epsilon_start=1.,
-                 epsilon_final=0.001,
+                 epsilon_final=0.,
                  epsilon_decay=10_000,
                  gamma=0.95,
                  learning_rate=1e-4,
                  bins=7,
                  target_net_update_freq=1000,
-                 memory_size=1024,
-                 batch_size=128,
+                 memory_size=512,
+                 batch_size=64,
                  learning_starts=64,
-                 time_steps=10_000_000):
-
+                 time_steps=5_000_000):
         self.epsilon_start = epsilon_start
         self.epsilon_final = epsilon_final
         self.epsilon_decay = epsilon_decay
