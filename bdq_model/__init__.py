@@ -87,8 +87,8 @@ class BranchingDQN(nn.Module):
         next_states = torch.tensor(np.stack(b_next_states), device=self.config.device).float()
         masks = torch.tensor(np.stack(b_masks), device=self.config.device).float().reshape(-1, 1)
 
-        input_tuple = torch.stack((states, targets))
-        qvals = self.q(input_tuple)
+        input_tuples = torch.stack((states, targets))
+        qvals = self.q(input_tuples)
 
         current_q_values = qvals.gather(2, actions).squeeze(-1)
 
@@ -97,7 +97,6 @@ class BranchingDQN(nn.Module):
             argmax = torch.argmax(self.q(next_input_tuple), dim=2)
 
             max_next_q_vals = self.target(next_input_tuple).gather(2, argmax.unsqueeze(2)).squeeze(-1)
-            max_next_q_vals = max_next_q_vals.mean(1, keepdim=True)
 
         expected_q_vals = rewards + max_next_q_vals * 0.99 * masks
         loss = F.mse_loss(expected_q_vals, current_q_values)

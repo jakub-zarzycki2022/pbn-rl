@@ -44,12 +44,12 @@ class AgentConfig:
                  epsilon_decay=10_000,
                  gamma=0.95,
                  learning_rate=1e-4,
-                 bins=7,
+                 bins=3,
                  target_net_update_freq=1000,
                  memory_size=512,
                  batch_size=64,
                  learning_starts=64,
-                 time_steps=5_000_000):
+                 time_steps=1_000_000):
         self.epsilon_start = epsilon_start
         self.epsilon_final = epsilon_final
         self.epsilon_decay = epsilon_decay

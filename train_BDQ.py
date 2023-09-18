@@ -104,33 +104,7 @@ target = env.target
 lens = []
 actions = []
 
-print("testig the model")
-print(f"target is {target}")
-for attractor, target in itertools.product(env.env.env.env.all_attractors, repeat=2):
-    _ = env.env.env.env.setTarget(target)
-    target_state = [0 if i == '*' else i for i in random.choice(target)]
-    for initial_state in attractor:
-        actions = []
-        state = initial_state
-        state = [0 if i == '*' else i for i in list(state)]
-        _ = env.reset()
-        _ = env.env.env.env.graph.setState(state)
-        count = 0
-        while not env.in_target(state):
-            count += 1
-            action = model.predict(state, target_state)
-            actions.append(np.unique(action))
-            _ = env.step(action)
-            state = env.render()
-            if count > 100:
-                print(f"failed to converge for initial state {initial_state}")
-                break
-        else:
-            print(f"for initial state {initial_state} and target {target} got ")
-            for action in actions:
-                print(action)
-            print(f"total of {count} steps)")
-            lens.append(count)
+print("skip testig the model")
 
 env.close()
 run.finish()
