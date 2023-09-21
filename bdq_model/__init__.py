@@ -65,9 +65,9 @@ class BranchingDQN(nn.Module):
                 random_action = np.random.randint(0, self.action_count, size=self.config.bins)
                 action = torch.tensor(random_action, device=self.config.device)
 
-                if np.random.random() < 0.001:
-                    print(f"random {epsilon}")
-                    print(f"{state}\n{target}\n{action}")
+                # if np.random.random() < 0.001:
+                #     print(f"random {epsilon}")
+                #     print(f"{state}\n{target}\n{action}")
             else:
                 s = np.stack((state, target))
                 x = torch.tensor(s, dtype=torch.float, device=self.config.device).unsqueeze(1)
@@ -75,9 +75,9 @@ class BranchingDQN(nn.Module):
                 out = self.q(x).squeeze(0)
                 action = torch.argmax(out, dim=1).to(self.config.device)
 
-                if np.random.random() < 0.001:
-                    print(f"real")
-                    print(f"{state}\n{target}\n{action}")
+                # if np.random.random() < 0.001:
+                #     print(f"real")
+                #     print(f"{state}\n{target}\n{action}")
 
                 # min_distance, best_action = self.action_lookup[(tuple(state), tuple(target))]
 
