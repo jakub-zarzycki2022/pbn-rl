@@ -112,7 +112,7 @@ class BranchingDQN(nn.Module):
             max_next_q_vals = self.target(next_input_tuple).gather(2, argmax.unsqueeze(2)).squeeze(-1)
 
         expected_q_vals = rewards + max_next_q_vals * 0.99 * masks
-        loss = F.huber_loss(expected_q_vals, current_q_values)
+        loss = F.mse_loss(expected_q_vals, current_q_values)
 
         adam.zero_grad()
         loss.backward()
@@ -195,7 +195,7 @@ class BranchingDQN(nn.Module):
                 rew_recap.append(ep_reward)
                 len_recap.append(ep_len)
                 wandb.log({"episode_len": ep_len,
-                           "episode_reward": ep_reward,})
+                           "episode_reward": ep_reward})
                 ep_reward = 0.
                 ep_len = 0
 
