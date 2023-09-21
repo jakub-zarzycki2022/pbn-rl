@@ -24,7 +24,7 @@ env = gym.make("gym-PBN/BittnerMulti-28")
 env.reset()
 
 DEVICE = 'cpu'
-model_path = 'models/jz_v13_pbn28_multi/bdq_final.pt'; 
+model_path = 'models/jz_v15_pbn28_multi/bdq_952000.pt'; 
 
 config = AgentConfig()
 model = BranchingDQN((28, 28), 29, config)

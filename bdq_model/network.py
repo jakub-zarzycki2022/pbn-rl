@@ -60,8 +60,8 @@ class BranchingQNetwork(nn.Module):
         self.model = nn.Sequential(MyBilinear(state, target, 128),
                                    nn.ReLU(),
                                    nn.Linear(128, 128),
-                                   nn.ReLU(),
-                                   nn.Linear(128, 128),
+                                   # nn.ReLU(),
+                                   # nn.Linear(128, 128),
                                    nn.ReLU())
 
         self.value_head = nn.Linear(128, 1)
@@ -80,7 +80,3 @@ class BranchingQNetwork(nn.Module):
         # input(q_val.shape)
 
         return q_val
-
-# b = BranchingQNetwork(5, 4, 6)
-
-# b(torch.rand(10, 5))

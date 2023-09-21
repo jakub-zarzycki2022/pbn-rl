@@ -42,10 +42,13 @@ class BranchingDQN(nn.Module):
         self.config = config
         self.update_counter = 0
 
-        self.MIN_EPSILON = 0.05
+        self.time_steps = 0
+        self.start_predicting = config.learning_starts
+
+        self.MIN_EPSILON = config.epsilon_final
         self.action_lookup_prob = 0.
         self.MAX_EPSILON = config.epsilon_start
-        self.EPSILON_DECREMENT = (self.MAX_EPSILON - self.MIN_EPSILON) / (1 * config.time_steps)
+        self.EPSILON_DECREMENT = (self.MAX_EPSILON - self.MIN_EPSILON) / config.epsilon_decay
 
         # maps (state, target) to (min_known_distance, first_action_taken)
         self.action_lookup = defaultdict((lambda: (100, 0)))
@@ -53,12 +56,18 @@ class BranchingDQN(nn.Module):
 
     def predict(self, state, target):
         with torch.no_grad():
-            # a = self.q(x).max(1)[1]
 
+            # exploration probability
             epsilon = self.decrement_epsilon()
+
+            # explore
             if np.random.random() < epsilon:
-                action = torch.tensor(np.random.randint(0, self.action_count, size=self.config.bins),
-                                      device=self.config.device)
+                random_action = np.random.randint(0, self.action_count, size=self.config.bins)
+                action = torch.tensor(random_action, device=self.config.device)
+
+                if np.random.random() < 0.001:
+                    print(f"random {epsilon}")
+                    print(f"{state}\n{target}\n{action}")
             else:
                 s = np.stack((state, target))
                 x = torch.tensor(s, dtype=torch.float, device=self.config.device).unsqueeze(1)
@@ -66,10 +75,14 @@ class BranchingDQN(nn.Module):
                 out = self.q(x).squeeze(0)
                 action = torch.argmax(out, dim=1).to(self.config.device)
 
-                min_distance, best_action = self.action_lookup[(tuple(state), tuple(target))]
+                if np.random.random() < 0.001:
+                    print(f"real")
+                    print(f"{state}\n{target}\n{action}")
 
-                if min_distance < 10 and np.random.random() < self.action_lookup_prob:
-                    action = best_action
+                # min_distance, best_action = self.action_lookup[(tuple(state), tuple(target))]
+
+                # if min_distance < 10:
+                #     action = best_action
 
             if self.first_action is None:
                 self.first_action = action
@@ -99,7 +112,7 @@ class BranchingDQN(nn.Module):
             max_next_q_vals = self.target(next_input_tuple).gather(2, argmax.unsqueeze(2)).squeeze(-1)
 
         expected_q_vals = rewards + max_next_q_vals * 0.99 * masks
-        loss = F.mse_loss(expected_q_vals, current_q_values)
+        loss = F.huber_loss(expected_q_vals, current_q_values)
 
         adam.zero_grad()
         loss.backward()
@@ -115,7 +128,13 @@ class BranchingDQN(nn.Module):
 
     def decrement_epsilon(self):
         """Decrement the exploration rate."""
-        self.EPSILON = max(self.MIN_EPSILON, self.EPSILON - self.EPSILON_DECREMENT)
+        self.time_steps += 1
+        if self.config.epsilon_decay > self.time_steps > self.start_predicting:
+            self.EPSILON = max(self.MIN_EPSILON, self.EPSILON - self.EPSILON_DECREMENT)
+
+        if self.time_steps > self.config.epsilon_zero:
+            self.EPSILON = 0.05
+
         return self.EPSILON
 
     def increase_action_lookup_prob(self):
@@ -193,7 +212,8 @@ class BranchingDQN(nn.Module):
 
                 wandb.log({"Avg episode reward": np.average(rew_recap),
                            "Avg episode length": np.average(len_recap)})
-                
+
+                #env.env.evn.env.rework_probas_epoch(len_recap)
                 rew_recap = []
                 len_recap = []
                 self.save(f"{path}/bdq_{frame}.pt")
