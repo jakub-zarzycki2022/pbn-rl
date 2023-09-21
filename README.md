@@ -34,6 +34,10 @@ Suite of experiments for running Deep Reinforcement Learning for control of Prob
     ```sh
     python train_sb3.py --time-steps 400_000 --env-name n28 --env envs/n28.pkl
     ```
+- Use `train_BDQ.py` to train multiaction BDQ agent. 
+  Use AgentConfig class in `bdq_model/utils.py` file for config.
+  E.g.:
+- ```sh
+  python train_BDQ.py --size 28 --exp-name test --env zzz
+```
 
-# Getting Help
-Principal developer: [Evangelos Chatzaroulas](mailto:e.chatzaroulas@surrey.ac.uk) ([Alternate e-mail](mailto:evangelos.ch.de@gmail.com)).
