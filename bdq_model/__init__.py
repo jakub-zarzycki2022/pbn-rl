@@ -53,6 +53,7 @@ class BranchingDQN(nn.Module):
         # maps (state, target) to (min_known_distance, first_action_taken)
         self.action_lookup = defaultdict((lambda: (100, 0)))
         self.first_action = None
+        self.wandb = None
 
     def predict(self, state, target):
         with torch.no_grad():
@@ -113,6 +114,7 @@ class BranchingDQN(nn.Module):
 
         expected_q_vals = rewards + max_next_q_vals * 0.99 * masks
         loss = F.mse_loss(expected_q_vals, current_q_values)
+        self.wandb.log({"loss": loss.data})
 
         adam.zero_grad()
         loss.backward()
@@ -150,6 +152,7 @@ class BranchingDQN(nn.Module):
         config = self.config
         memory = ExperienceReplay(config.memory_size)
         adam = optim.Adam(self.q.parameters(), lr=config.learning_rate)
+        self.wandb = wandb
 
         (state, target), _ = env.reset()
         ep_reward = 0.
