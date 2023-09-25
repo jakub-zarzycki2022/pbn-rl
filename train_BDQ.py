@@ -100,9 +100,9 @@ model.learn(
 )
 
 attrs = env.all_attractors
-target = env.target
-lens = []
-actions = []
+print(f"final attractors were ({len(env.all_attractors)}")
+for attr in env.all_attractors:
+    print(attr)
 
 print("skip testig the model")
 
