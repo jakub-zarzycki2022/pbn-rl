@@ -80,7 +80,7 @@ def state_equals(state1, state2):
 config = AgentConfig()
 
 state_len = env.observation_space.shape[0]
-model = BranchingDQN((state_len, state_len), state_len + 1, config)
+model = BranchingDQN((state_len, state_len), state_len + 1, config, env)
 model.to(device=model.config.device)
 
 # config = model.get_config()

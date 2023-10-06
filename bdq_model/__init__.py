@@ -22,10 +22,11 @@ import bdq_model.utils
 
 class BranchingDQN(nn.Module):
 
-    def __init__(self, observation, ac, config):
+    def __init__(self, observation, ac, config, env):
         super().__init__()
 
-        self.EPSILON = 0.9
+        self.EPSILON = config.epsilon_start
+        self.env = env
         self.bins = config.bins
         self.state_size, self.target_size = observation
 
@@ -54,6 +55,8 @@ class BranchingDQN(nn.Module):
         self.action_lookup = defaultdict((lambda: (100, 0)))
         self.first_action = None
         self.wandb = None
+
+        self.attractor_count = len(env.attracting_states)
 
     def predict(self, state, target):
         with torch.no_grad():
@@ -165,6 +168,10 @@ class BranchingDQN(nn.Module):
 
             env_action = list(action.unique())
             new_state, reward, terminated, truncated, infos = env.step(env_action)
+            if len(self.env.attracting_states) > self.attractor_count:
+                self.attractor_count = len(self.env.attracting_states)
+                self.EPSILON = max(self.EPSILON, 0.5)
+
             done = terminated | truncated
             ep_reward += reward
             ep_len += 1
@@ -185,9 +192,7 @@ class BranchingDQN(nn.Module):
                 if ep_len < distance:
                     self.action_lookup[(tuple(state), tuple(target))] = (ep_len, self.first_action)
 
-                new_attractor = env.env.env.env.rework_probas(ep_len)
-                if new_attractor:
-                    self.EPSILON = 0.5
+                env.env.env.env.rework_probas(ep_len)
 
                 (new_state, target), _ = env.reset()
 
