@@ -134,9 +134,6 @@ class BranchingDQN(nn.Module):
         if self.config.epsilon_decay > self.time_steps > self.start_predicting:
             self.EPSILON = max(self.MIN_EPSILON, self.EPSILON - self.EPSILON_DECREMENT)
 
-        if self.time_steps > self.config.epsilon_zero:
-            self.EPSILON = 0.05
-
         return self.EPSILON
 
     def increase_action_lookup_prob(self):
@@ -188,7 +185,9 @@ class BranchingDQN(nn.Module):
                 if ep_len < distance:
                     self.action_lookup[(tuple(state), tuple(target))] = (ep_len, self.first_action)
 
-                env.env.env.env.rework_probas(ep_len)
+                new_attractor = env.env.env.env.rework_probas(ep_len)
+                if new_attractor:
+                    self.EPSILON = 0.5
 
                 (new_state, target), _ = env.reset()
 

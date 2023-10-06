@@ -47,7 +47,10 @@ parser.add_argument("--log-dir", default="logs", help="path to save logs")
 args = parser.parse_args()
 
 # # Load env
-env = gym.make(f"gym-PBN/BittnerMulti-28")
+env = gym.make(f"gym-PBN/BittnerMultiGeneral", N=args.size)
+#env = gym.make(f"gym-PBN/BittnerMulti-7")
+#env = gym.make(f"gym-PBN/BittnerMulti-10")
+#env = gym.make(f"gym-PBN/BittnerMulti-28")
 
 # set up logs
 TOP_LEVEL_LOG_DIR = Path(args.log_dir)

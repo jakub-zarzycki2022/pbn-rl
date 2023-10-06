@@ -60,8 +60,6 @@ class BranchingQNetwork(nn.Module):
         self.model = nn.Sequential(MyBilinear(state, target, 128),
                                    nn.ReLU(),
                                    nn.Linear(128, 128),
-                                   # nn.ReLU(),
-                                   # nn.Linear(128, 128),
                                    nn.ReLU())
 
         self.value_head = nn.Linear(128, 1)
@@ -72,11 +70,6 @@ class BranchingQNetwork(nn.Module):
         value = self.value_head(out)
         advantages = torch.stack([l(out) for l in self.adv_heads], dim=1)
 
-        # print(advantages.shape)
-        # print(advantages.mean(2).shape)
-        # test = advantages.mean(2, keepdim=True)
-        # input(test.shape)
         q_val = value.unsqueeze(2) + advantages - advantages.mean(2, keepdim=True)
-        # input(q_val.shape)
 
         return q_val

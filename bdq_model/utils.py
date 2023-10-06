@@ -41,15 +41,14 @@ class AgentConfig:
     def __init__(self,
                  epsilon_start=.8,
                  epsilon_final=0.1,
-                 epsilon_decay=2_000,
-                 epsilon_zero=5_000,
-                 gamma=0.99,
+                 epsilon_decay=5_000,
+                 gamma=1.,
                  learning_rate=0.001,
                  bins=3,
-                 target_net_update_freq=1_000,
-                 memory_size=4096,
-                 batch_size=64,
-                 learning_starts=64,
+                 target_net_update_freq=2000,
+                 memory_size=1024,
+                 batch_size=512,
+                 learning_starts=256,
                  time_steps=100_000):
         self.epsilon_start = epsilon_start
         self.epsilon_final = epsilon_final
@@ -68,6 +67,7 @@ class AgentConfig:
 
         self.learning_starts = max(learning_starts, batch_size)
         self.time_steps = time_steps
+        print(self.time_steps)
         self.bins = bins
 
         use_cuda = torch.cuda.is_available()
