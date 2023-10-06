@@ -53,7 +53,6 @@ class AgentConfig:
         self.epsilon_start = epsilon_start
         self.epsilon_final = epsilon_final
         self.epsilon_decay = epsilon_decay
-        self.epsilon_zero = epsilon_zero
         self.epsilon_by_frame = lambda i: self.epsilon_final + (self.epsilon_start - self.epsilon_final) * np.exp(
             -1. * i / self.epsilon_decay)
 
