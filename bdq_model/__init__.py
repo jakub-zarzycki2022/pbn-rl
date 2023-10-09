@@ -168,6 +168,10 @@ class BranchingDQN(nn.Module):
 
             env_action = list(action.unique())
             new_state, reward, terminated, truncated, infos = env.step(env_action)
+
+            if truncated:
+                self.EPSILON = max(self.EPSILON, 0.5)
+
             if len(self.env.attracting_states) > self.attractor_count:
                 self.attractor_count = len(self.env.attracting_states)
                 self.EPSILON = max(self.EPSILON, 0.5)
@@ -218,7 +222,9 @@ class BranchingDQN(nn.Module):
                 print(f"Avg len: {np.average(len_recap)}")
 
                 wandb.log({"Avg episode reward": np.average(rew_recap),
-                           "Avg episode length": np.average(len_recap)})
+                           "Avg episode length": np.average(len_recap),
+                           "Attracting state count": self.attractor_count,
+                           "Exploration probability": self.EPSILON})
 
                 #env.env.evn.env.rework_probas_epoch(len_recap)
                 rew_recap = []

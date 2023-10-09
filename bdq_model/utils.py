@@ -49,7 +49,7 @@ class AgentConfig:
                  memory_size=1024,
                  batch_size=512,
                  learning_starts=256,
-                 time_steps=100_000):
+                 time_steps=1_000_000):
         self.epsilon_start = epsilon_start
         self.epsilon_final = epsilon_final
         self.epsilon_decay = epsilon_decay
