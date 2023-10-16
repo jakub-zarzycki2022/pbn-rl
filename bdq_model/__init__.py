@@ -169,8 +169,8 @@ class BranchingDQN(nn.Module):
             env_action = list(action.unique())
             new_state, reward, terminated, truncated, infos = env.step(env_action)
 
-            if truncated:
-                self.EPSILON = max(self.EPSILON, 0.5)
+            # if truncated:
+            #     self.EPSILON = max(self.EPSILON, 0.5)
 
             if len(self.env.attracting_states) > self.attractor_count:
                 self.attractor_count = len(self.env.attracting_states)
