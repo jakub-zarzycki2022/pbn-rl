@@ -47,46 +47,50 @@ class BranchingDQN(nn.Module):
         self.start_predicting = config.learning_starts
 
         self.MIN_EPSILON = config.epsilon_final
-        self.action_lookup_prob = 0.
         self.MAX_EPSILON = config.epsilon_start
         self.EPSILON_DECREMENT = (self.MAX_EPSILON - self.MIN_EPSILON) / config.epsilon_decay
 
         # maps (state, target) to (min_known_distance, first_action_taken)
-        self.action_lookup = defaultdict((lambda: (100, 0)))
         self.first_action = None
         self.wandb = None
 
         self.attractor_count = len(env.attracting_states)
 
+    def dst(self, l1, l2):
+        ret = 0
+        for x, y in zip(l1, l2):
+            if x != y:
+                ret += 1
+        return ret
+
     def predict(self, state, target):
         with torch.no_grad():
-
             # exploration probability
             epsilon = self.decrement_epsilon()
 
-            # explore
+            # explore using edit distance
             if np.random.random() < epsilon:
-                random_action = np.random.randint(0, self.action_count, size=self.config.bins)
-                action = torch.tensor(random_action, device=self.config.device)
+                potential_actions = [np.random.randint(0, self.action_count, size=self.config.bins) for _ in range(1)]
+                best_action = potential_actions[0]
+                best_distance = len(best_action)
 
-                # if np.random.random() < 0.001:
-                #     print(f"random {epsilon}")
-                #     print(f"{state}\n{target}\n{action}")
+                for potential_action in potential_actions:
+                    new_state = list(state)
+                    for intervention in np.unique(potential_action):
+                        if intervention > 0:
+                            new_state[intervention-1] = 1 - new_state[intervention-1]
+
+                    if self.dst(new_state, target) < best_distance:
+                        best_action = potential_action
+                        best_distance = self.dst(new_state, target)
+
+                action = torch.tensor(best_action, device=self.config.device)
             else:
                 s = np.stack((state, target))
                 x = torch.tensor(s, dtype=torch.float, device=self.config.device).unsqueeze(1)
 
                 out = self.q(x).squeeze(0)
                 action = torch.argmax(out, dim=1).to(self.config.device)
-
-                # if np.random.random() < 0.001:
-                #     print(f"real")
-                #     print(f"{state}\n{target}\n{action}")
-
-                # min_distance, best_action = self.action_lookup[(tuple(state), tuple(target))]
-
-                # if min_distance < 10:
-                #     action = best_action
 
             if self.first_action is None:
                 self.first_action = action
@@ -134,14 +138,13 @@ class BranchingDQN(nn.Module):
     def decrement_epsilon(self):
         """Decrement the exploration rate."""
         self.time_steps += 1
-        if self.config.epsilon_decay > self.time_steps > self.start_predicting:
+        if self.time_steps % 10000 == 0:
+            print(self.env.probabilities)
+
+        if self.time_steps > self.start_predicting:
             self.EPSILON = max(self.MIN_EPSILON, self.EPSILON - self.EPSILON_DECREMENT)
 
         return self.EPSILON
-
-    def increase_action_lookup_prob(self):
-        self.action_lookup_prob = min(self.EPSILON_DECREMENT + self.EPSILON_DECREMENT, 0.7)
-        return self.action_lookup_prob
 
     def learn(self,
               env,
@@ -172,8 +175,8 @@ class BranchingDQN(nn.Module):
             # if truncated:
             #     self.EPSILON = max(self.EPSILON, 0.5)
 
-            if len(self.env.attracting_states) > self.attractor_count:
-                self.attractor_count = len(self.env.attracting_states)
+            if len(self.env.all_attractors) > self.attractor_count:
+                self.attractor_count = len(self.env.all_attractors)
                 self.EPSILON = max(self.EPSILON, 0.5)
 
             done = terminated | truncated
@@ -191,11 +194,6 @@ class BranchingDQN(nn.Module):
 
             if done:
                 # noinspection PyTypeChecker
-                distance, _ = self.action_lookup[(tuple(state), tuple(target))]
-
-                if ep_len < distance:
-                    self.action_lookup[(tuple(state), tuple(target))] = (ep_len, self.first_action)
-
                 env.env.env.env.rework_probas(ep_len)
 
                 (new_state, target), _ = env.reset()
