@@ -165,6 +165,7 @@ class BranchingDQN(nn.Module):
         len_recap = []
 
         p_bar = tqdm(total=config.time_steps)
+        missed = defaultdict(int)
         for frame in range(config.time_steps):
 
             action = self.predict(state, target)
@@ -172,8 +173,8 @@ class BranchingDQN(nn.Module):
             env_action = list(action.unique())
             new_state, reward, terminated, truncated, infos = env.step(env_action)
 
-            # if truncated:
-            #     self.EPSILON = max(self.EPSILON, 0.5)
+            if truncated and frame > 30000:
+                missed[(self.env.state_attractor_id, self.env.target_attractor_id)] += 1
 
             if len(self.env.all_attractors) > self.attractor_count:
                 self.attractor_count = len(self.env.all_attractors)
@@ -216,15 +217,18 @@ class BranchingDQN(nn.Module):
                 self.update_policy(adam, memory, config.batch_size)
 
             if frame % 1000 == 0:
+                print(missed)
                 print(f"Average episode reward: {np.average(rew_recap)}")
                 print(f"Avg len: {np.average(len_recap)}")
 
                 wandb.log({"Avg episode reward": np.average(rew_recap),
                            "Avg episode length": np.average(len_recap),
                            "Attracting state count": self.attractor_count,
-                           "Exploration probability": self.EPSILON})
+                           "Exploration probability": self.EPSILON,
+                           "Missed paths": len(missed)})
 
-                #env.env.evn.env.rework_probas_epoch(len_recap)
+                # env.env.evn.env.rework_probas_epoch(len_recap)
+                missed.clear()
                 rew_recap = []
                 len_recap = []
                 self.save(f"{path}/bdq_{frame}.pt")

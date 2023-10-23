@@ -39,17 +39,17 @@ def save(agent, rewards, args):
 class AgentConfig:
 
     def __init__(self,
-                 epsilon_start=.8,
-                 epsilon_final=0.1,
-                 epsilon_decay=5_000,
-                 gamma=1.,
-                 learning_rate=0.001,
+                 epsilon_start=1.,
+                 epsilon_final=0.05,
+                 epsilon_decay=30_000,
+                 gamma=.999999,
+                 learning_rate=0.0001,
                  bins=3,
-                 target_net_update_freq=2000,
-                 memory_size=1024,
+                 target_net_update_freq=5000,
+                 memory_size=10**6,
                  batch_size=512,
-                 learning_starts=256,
-                 time_steps=1_000_000):
+                 learning_starts=512,
+                 time_steps=3_000_000):
         self.epsilon_start = epsilon_start
         self.epsilon_final = epsilon_final
         self.epsilon_decay = epsilon_decay
