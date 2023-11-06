@@ -138,8 +138,6 @@ class BranchingDQN(nn.Module):
     def decrement_epsilon(self):
         """Decrement the exploration rate."""
         self.time_steps += 1
-        if self.time_steps % 10000 == 0:
-            print(self.env.probabilities)
 
         if self.time_steps > self.start_predicting:
             self.EPSILON = max(self.MIN_EPSILON, self.EPSILON - self.EPSILON_DECREMENT)
@@ -178,7 +176,7 @@ class BranchingDQN(nn.Module):
 
             if len(self.env.all_attractors) > self.attractor_count:
                 self.attractor_count = len(self.env.all_attractors)
-                self.EPSILON = max(self.EPSILON, 0.5)
+                self.EPSILON = max(self.EPSILON, 0.2)
 
             done = terminated | truncated
             ep_reward += reward
