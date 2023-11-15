@@ -42,7 +42,7 @@ class AgentConfig:
                  epsilon_start=1.,
                  epsilon_final=0.05,
                  epsilon_decay=30_000,
-                 gamma=.999999,
+                 gamma=.99,
                  learning_rate=0.0001,
                  bins=3,
                  target_net_update_freq=5000,

@@ -193,8 +193,7 @@ class BranchingDQN(nn.Module):
 
             if done:
                 # noinspection PyTypeChecker
-                env.env.env.env.rework_probas(ep_len)
-
+                env.rework_probas(ep_len)
                 (new_state, target), _ = env.reset()
 
                 self.first_action = None
