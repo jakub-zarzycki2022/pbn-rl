@@ -171,7 +171,7 @@ class BranchingDQN(nn.Module):
             env_action = list(action.unique())
             new_state, reward, terminated, truncated, infos = env.step(env_action)
 
-            if truncated and frame > 30000:
+            if truncated and frame > self.config.epsilon_decay:
                 missed[(self.env.state_attractor_id, self.env.target_attractor_id)] += 1
 
             if len(self.env.all_attractors) > self.attractor_count:
