@@ -41,6 +41,7 @@ class BranchingDQN(nn.Module):
 
         self.target_net_update_freq = config.target_net_update_freq
         self.config = config
+        self.gamma = config.gamma
         self.update_counter = 0
 
         self.time_steps = 0
@@ -119,7 +120,7 @@ class BranchingDQN(nn.Module):
 
             max_next_q_vals = self.target(next_input_tuple).gather(2, argmax.unsqueeze(2)).squeeze(-1)
 
-        expected_q_vals = rewards + max_next_q_vals * 0.99 * masks
+        expected_q_vals = rewards + max_next_q_vals * self.gamma * masks
         loss = F.mse_loss(expected_q_vals, current_q_values)
         self.wandb.log({"loss": loss.data})
 
