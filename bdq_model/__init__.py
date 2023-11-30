@@ -16,8 +16,8 @@ import random
 from .network import DuelingNetwork, BranchingQNetwork
 # from .utils import ExperienceReplayMemory
 
-from ddqn_per.memory import ExperienceReplay, PrioritisedER, Transition
-import bdq_model.utils
+from .memory import ExperienceReplay, PrioritisedER, Transition
+import utils
 
 
 class BranchingDQN(nn.Module):
@@ -46,13 +46,12 @@ class BranchingDQN(nn.Module):
 
         self.time_steps = 0
         self.start_predicting = config.learning_starts
+        self.reward_discount_rate = config.reward_discount_rate
 
         self.MIN_EPSILON = config.epsilon_final
         self.MAX_EPSILON = config.epsilon_start
         self.EPSILON_DECREMENT = (self.MAX_EPSILON - self.MIN_EPSILON) / config.epsilon_decay
 
-        # maps (state, target) to (min_known_distance, first_action_taken)
-        self.first_action = None
         self.wandb = None
 
         self.attractor_count = len(env.attracting_states)
@@ -92,9 +91,6 @@ class BranchingDQN(nn.Module):
 
                 out = self.q(x).squeeze(0)
                 action = torch.argmax(out, dim=1).to(self.config.device)
-
-            if self.first_action is None:
-                self.first_action = action
 
             return action
 
@@ -165,6 +161,8 @@ class BranchingDQN(nn.Module):
 
         p_bar = tqdm(total=config.time_steps)
         missed = defaultdict(int)
+        transitions = []
+
         for frame in range(config.time_steps):
 
             action = self.predict(state, target)
@@ -172,7 +170,7 @@ class BranchingDQN(nn.Module):
             env_action = list(action.unique())
             new_state, reward, terminated, truncated, infos = env.step(env_action)
 
-            if truncated and frame > self.config.epsilon_decay:
+            if truncated:
                 missed[(self.env.state_attractor_id, self.env.target_attractor_id)] += 1
 
             if len(self.env.all_attractors) > self.attractor_count:
@@ -180,10 +178,9 @@ class BranchingDQN(nn.Module):
                 self.EPSILON = max(self.EPSILON, 0.2)
 
             done = terminated | truncated
-            ep_reward += reward
             ep_len += 1
 
-            memory.store(Transition(
+            transitions.append(Transition(
                 state,
                 target,
                 action,
@@ -193,11 +190,36 @@ class BranchingDQN(nn.Module):
             ))
 
             if done:
+                # we need to propagate reward along whole path
+                if terminated:
+                    last = transitions[-1]
+                    gamma = self.reward_discount_rate
+                    discount_factor = gamma ** len(transitions)
+                    reward_bonus = last.reward * discount_factor
+
+                    for transition in transitions:
+                        memory.store(Transition(
+                            transition.state,
+                            transition.target,
+                            transition.action,
+                            transition.reward + reward_bonus,
+                            transition.next_state,
+                            transition.done
+                        ))
+                        ep_reward = transition.reward + reward_bonus
+                        reward_bonus /= gamma
+
+                else:
+                    for transition in transitions:
+                        memory.store(transition)
+                        ep_reward = transition.reward
+
+                transitions = []
+
                 # noinspection PyTypeChecker
                 env.rework_probas(ep_len)
                 (new_state, target), _ = env.reset()
 
-                self.first_action = None
                 recap.append(ep_reward)
                 p_bar.set_description('Rew: {:.3f}'.format(ep_reward))
                 rew_recap.append(ep_reward)
@@ -211,7 +233,7 @@ class BranchingDQN(nn.Module):
 
             p_bar.update(1)
 
-            if frame > config.batch_size:
+            if frame > max(config.batch_size, config.learning_starts):
                 self.update_policy(adam, memory, config.batch_size)
 
             if frame % 1000 == 0:
