@@ -39,6 +39,9 @@ class BranchingDQN(nn.Module):
 
         self.target.load_state_dict(self.q.state_dict())
 
+        # model_path = 'models/laptop1_pbn28_backprop_reward/bdq_final.pt'
+        # self.load_state_dict(torch.load(model_path))
+
         self.target_net_update_freq = config.target_net_update_freq
         self.config = config
         self.gamma = config.gamma
@@ -130,7 +133,10 @@ class BranchingDQN(nn.Module):
         self.update_counter += 1
         if self.update_counter % self.target_net_update_freq == 0:
             self.update_counter = 0
-            self.target.load_state_dict(self.q.state_dict())
+
+            for key in self.target.state_dict():
+                self.target.state_dict()[key] /= 2
+                self.target.state_dict()[key] += self.q.state_dict()[key] / 2
 
     def decrement_epsilon(self):
         """Decrement the exploration rate."""
