@@ -19,6 +19,10 @@ from bdq_model.utils import ExperienceReplayMemory, AgentConfig
 import seaborn as sns
 from matplotlib import pyplot as plt
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--model-path", required=True)
+args = parser.parse_args()
+
 model_cls = BranchingDQN
 model_name = "BranchingDQN"
 
@@ -45,13 +49,18 @@ def statistical_attractors():
     statistial_attractors = [node for node, frequency in states[:4]]
 
 DEVICE = 'cpu'
+
+#model_path = 'models/laptop1_pbn28_backprop_reward/bdq_final.pt'; 
 #model_path = 'models/pbn10_pbn10_bdq/bdq_final.pt'; 
-model_path = 'models/for_paper_new_arch_pbn28_cluster/bdq_100000.pt';
+#path_model = 'models/for_paper_new_arch_pbn28_cluster/bdq_100000.pt';
 #model_path = 'models/jz_v3_pbn7_for_paper//bdq_final.pt';
+model_path = 'models/cluster9_pbn28_256input_complicated/bdq_247000.pt'
+
+model_path = args.model_path
 
 config = AgentConfig()
 model = BranchingDQN((N, N), N+1, config, env)
-model.load_state_dict(torch.load(model_path))
+model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
 
 
 action = 0
@@ -90,7 +99,7 @@ for attractor_id, target_id in itertools.product(range(len(all_attractors)), rep
         state = env.render()
         #action_named = [gen_ids[a-1] for a in action]
 
-        if count > 10_000:
+        if count > 100:
             print(f"failed to converge for {attractor_id}, {target_id}")
             #print(f"final state was 		     {tuple(state)}")
             failed += 1
@@ -140,7 +149,7 @@ for attractor_id, target_id in itertools.product(range(len(all_attractors)), rep
         state = env.render()
         #action_named = [gen_ids[a-1] for a in action]
 
-        if count > 100:
+        if count > 1000:
             print(f"failed to converge for {attractor_id}, {target_id}")
             #print(f"final state was 		     {tuple(state)}")
             failed += 1
