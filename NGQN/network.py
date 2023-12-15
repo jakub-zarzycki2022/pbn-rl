@@ -19,7 +19,7 @@ class GCN(nn.Module):
         self.conv1 = GCNConv(2, 32)
         self.conv2 = GCNConv(32, 1)
 
-        self.model = nn.Sequential(nn.Linear(7, 64),
+        self.model = nn.Sequential(nn.Linear(observation[0], 64),
                                    nn.LeakyReLU(),
                                    nn.Linear(64, 64),
                                    nn.LeakyReLU(),

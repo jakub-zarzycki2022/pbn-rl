@@ -46,7 +46,7 @@ class AgentConfig:
                  reward_discount_rate=0.9,
                  learning_rate=0.001,
                  bins=3,
-                 target_net_update_freq=3000,
+                 target_net_update_freq=10000,
                  memory_size=10**6,
                  batch_size=4,
                  learning_starts=288,

@@ -59,7 +59,24 @@ class GQN(nn.Module):
         self.wandb = None
 
         self.attractor_count = len(env.attracting_states)
-        self.edge_index = torch.tensor([(a, b) for a, b in product(range(7), range(7)) if a != b], dtype=torch.int).t()
+        self.edge_index = self.get_adj_list()
+        print(self.edge_index)
+
+    def get_adj_list(self):
+        env = self.env
+        top_nodes = []
+        bot_nodes = []
+
+        for top_node in env.graph.nodes:
+            done = set()
+            for predictor, _, _ in top_node.predictors:
+                 for bot_node_id in predictor:
+                    if bot_node_id not in done:
+                        done.add(bot_node_id)
+                        top_nodes.append(top_node.index)
+                        bot_nodes.append(env.graph.getNodeByID(bot_node_id).index)
+
+        return torch.tensor([top_nodes, bot_nodes], dtype=torch.int, device=self.config.device)
 
     def dst(self, l1, l2):
         ret = 0
