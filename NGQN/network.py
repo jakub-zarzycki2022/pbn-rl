@@ -1,7 +1,7 @@
 import torch 
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GCNConv, EdgeConv
 import torch.optim as optim 
 from torch.distributions import Categorical 
 
@@ -16,14 +16,20 @@ class GCN(nn.Module):
 
         state, target = observation
 
-        self.conv1 = GCNConv(2, 32)
-        self.conv2 = GCNConv(32, 1)
+        self.conv_model = nn.Sequential(nn.Linear(4, 64),
+                                   nn.ReLU(),
+                                   nn.Linear(64, observation[0]),
+                                   )
 
-        self.model = nn.Sequential(nn.Linear(observation[0], 64),
+        self.conv1 = EdgeConv(self.conv_model, aggr="sum")
+
+        self.model = nn.Sequential(nn.Linear(observation[0], 128),
                                    nn.LeakyReLU(),
-                                   nn.Linear(64, 64),
+                                   nn.Linear(128, 64),
                                    nn.LeakyReLU(),
                                    )
+
+        self.pooling = nn.AvgPool1d(4)
 
         self.value_head = nn.Linear(64, 1)
 
@@ -31,8 +37,8 @@ class GCN(nn.Module):
 
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor):
         out = self.conv1(x, edge_index)
-        out = out.relu()
-        out = self.conv2(out, edge_index).relu().t()
+
+        out = self.pooling(out).relu().t()
         out = self.model(out)
         value = self.value_head(out)
         advantages = torch.stack([l(out) for l in self.adv_heads], dim=1)
