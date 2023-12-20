@@ -19,44 +19,24 @@ from bdq_model.utils import ExperienceReplayMemory, AgentConfig
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--model-path", required=True)
-args = parser.parse_args()
-
 model_cls = BranchingDQN
 model_name = "BranchingDQN"
 
-N = 28
-#env = gym.make("gym-PBN/BittnerMultiGeneral", N=N)
-env = gym.make("gym-PBN/BittnerMulti-28")
+N = 7
+env = gym.make("gym-PBN/BittnerMultiGeneral", N=N)
+#env = gym.make("gym-PBN/BittnerMulti-28")
 env.reset()
 
-def statistical_attractors():
-    print(f"Calculating state statistics for N = {env.N}")
-    print(f"it should take {10000} steps")
-    state_log = defaultdict(int)
-    graph = env.env.env.env.graph
-    for _ in range(1000):
-        s = [random.randint(0, 1) for _ in range(28)]
-        graph.setState(s)
-        print("current state is ", s)
-        for j in range(1000):
-            state = tuple(env.render())
-            state_log[state] += 1
-            _ = env.env.env.env.step([], force=True)
-
-    states = sorted(state_log.items(), key=lambda kv: kv[1], reverse=True)
-    statistial_attractors = [node for node, frequency in states[:4]]
 
 DEVICE = 'cpu'
 
 #model_path = 'models/laptop1_pbn28_backprop_reward/bdq_final.pt'; 
 #model_path = 'models/pbn10_pbn10_bdq/bdq_final.pt'; 
 #path_model = 'models/for_paper_new_arch_pbn28_cluster/bdq_100000.pt';
-#model_path = 'models/jz_v3_pbn7_for_paper//bdq_final.pt';
-model_path = 'models/cluster9_pbn28_256input_complicated/bdq_247000.pt'
+model_path = 'models/jz_v3_pbn7_for_paper//bdq_final.pt';
+#model_path = 'models/cluster9_pbn28_256input_complicated/bdq_247000.pt'
 
-model_path = args.model_path
+#model_path = args.model_path
 
 config = AgentConfig()
 model = BranchingDQN((N, N), N+1, config, env)
