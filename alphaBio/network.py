@@ -34,6 +34,7 @@ class NNet(nn.Module):
                                    )
 
         self.pooling = nn.AvgPool1d(4)
+        self.bn = nn.BatchNorm1d(7)
 
         self.value_head = nn.Linear(128, 1)
         self.policy_head = nn.Linear(128, action_space_dimension)
@@ -50,6 +51,6 @@ class NNet(nn.Module):
         value = self.value_head(out)
         policy = self.policy_head(out)
 
-        policy, value = F.log_softmax(policy, dim=2).squeeze(dim=1), F.softmax(value)
+        policy, value = F.log_softmax(policy, dim=2).squeeze(dim=1), torch.tanh(value)
 
         return policy, value

@@ -35,18 +35,11 @@ class MCTS:
             probs: a policy vector where the probability of the ith action is
                    proportional to Nsa[(s,a)]**(1./temp)
         """
-        print(self.Ns)
-        self.Nsa = defaultdict(int)
-        for i in range(5):
+        for i in range(10):
             self.search(state, target, self.env.horizon)
 
         s = tuple(state)
         counts = [self.Nsa[(s, a)] for a in range(len(s) + 1)]
-        # print("new pair")
-        # print(state)
-        # print(target)
-        # print(counts)
-        # raise ValueError
 
         if temp == 0:
             bestAs = np.array(np.argwhere(counts == np.max(counts))).flatten()
@@ -60,7 +53,7 @@ class MCTS:
         probs = [x / counts_sum for x in counts]
         return probs
 
-    def search(self, state, target, max_depth=4):
+    def search(self, state, target, max_depth=10):
         """
         This function performs one iteration of MCTS. It is recursively called
         till a leaf node is found. The action chosen at each node is one that
@@ -77,25 +70,25 @@ class MCTS:
         state for the current player, then its value is -v for the other player.
 
         Returns:
-            v: the negative of the value of the current canonicalBoard
+            v: the value of the current state
         """
 
         if max_depth <= 0:
-            return 0
+            return -1
 
         max_depth -= 1
 
         state = tuple(state)
         target = tuple(target)
 
-        # terminal node
         if state == target:
+            self.Es[state] = 1
             return 1
 
         if state not in self.Ps:
             # leaf node
             self.Ps[state], v = self.model.predict(state, target)
-            sum_Ps_s = torch.sum(self.Ps[state])
+            sum_Ps_s = np.sum(self.Ps[state])
             self.Ps[state] /= sum_Ps_s  # renormalize
 
             self.Ns[state] = 0
@@ -121,10 +114,14 @@ class MCTS:
 
         a = best_act
         next_state = self.env.get_next_state(state, [a])
-        if state == next_state:
+
+        if next_state == state:
             max_depth /= 2
 
         v = self.search(next_state, target, max_depth)
+
+        if next_state == state:
+            v *= .9
 
         if (state, a) in self.Qsa:
             self.Qsa[(state, a)] = (self.Nsa[(state, a)] * self.Qsa[(state, a)] + v) / (self.Nsa[(state, a)] + 1)

@@ -83,10 +83,9 @@ class AlphaBio(nn.Module):
             x = torch.tensor((state, target), dtype=torch.float, device=self.config.device)
             x = x.t()
             x = x.unsqueeze(dim=0)
-
             policy, value = self.nnet(x, self.edge_index)
 
-            return torch.exp(policy).data[0], value.data[0]
+            return torch.exp(policy).data.numpy()[0], value.data.numpy()[0]
 
     def loss_pi(self, targets, outputs):
         return -torch.sum(targets * outputs) / targets.size()[0]
@@ -132,8 +131,6 @@ class AlphaBio(nn.Module):
 
     def execute_episode(self, mcts: MCTS):
         (state, target), _ = self.env.reset()
-        print(state)
-        print(target)
         self.config.tempThreshold = 1
         trainExamples = []
         episodeStep = 0
@@ -144,7 +141,7 @@ class AlphaBio(nn.Module):
             episodeStep += 1
             temp = int(episodeStep < self.config.tempThreshold)
 
-            pi = mcts.get_action_prob(state, target, temp=1)
+            pi = mcts.get_action_prob(state, target, temp=temp)
             trainExamples.append([state, target, pi, None])
 
             action = np.random.choice(len(pi), p=pi)
@@ -155,7 +152,7 @@ class AlphaBio(nn.Module):
             if done:
                 gamma = self.config.reward_discount_rate
                 for i in range(len(trainExamples)):
-                    trainExamples[i][3] = 0 if truncated else 1  # else reward ** (episodeStep - i)
+                    trainExamples[i][3] = -1 if truncated else 1  # else reward ** (episodeStep - i)
                 return trainExamples
 
     def learn(self,
@@ -173,7 +170,10 @@ class AlphaBio(nn.Module):
         len_recap = []
 
         p_bar = tqdm(total=config.num_iteration)
-        missed = defaultdict(int)
+        missed = 0
+        short = 0
+        total = 0
+        episode_count = 0
 
         for i in range(config.num_iteration):
             iterationTrainExamples = []
@@ -181,41 +181,44 @@ class AlphaBio(nn.Module):
             while len(iterationTrainExamples) < config.batch_size:
                 mcts = MCTS(env, self)  # reset search tree
                 episode = self.execute_episode(mcts)
+                episode_count += 1
                 iterationTrainExamples.extend(episode)
 
                 ep_reward = episode[-1][3]
                 ep_len = len(episode)
-                p_bar.set_description('Rew: {:.3f}'.format(ep_reward))
-                rew_recap.append(ep_reward)
+                if ep_len == 20:
+                    missed += 1
+                if ep_len < 4:
+                    short += 1
+                total += 1
+                p_bar.set_description('Len: {:.3f}'.format(ep_len))
+                # rew_recap.append(ep_reward)
                 len_recap.append(ep_len)
                 wandb.log({"episode_len": ep_len,
                            "episode_reward": ep_reward})
 
                 p_bar.update(1)
 
-            # training new network, keeping a copy of the old one
-            self.save(f"{path}/bdq_{i}.pt")
+            wandb.log({"Avg episode length": np.average(len_recap),
+                       "Attracting state count": self.attractor_count,
+                       "Missed paths": missed,
+                       "Short paths (<4)": short,
+                       "Total paths in epoch": total})
+
+            print("Avg len: ", np.average(len_recap))
+            print(f"Missed: {missed}, short: {short}, total: {total}")
+            len_recap = []
+            missed = 0
+            short = 0
+            total = 0
+
+            checkpoint_path = f"{path}/alphaBio_{episode_count // 1000 * 1000}.pt"
+            print(checkpoint_path)
+            self.save(checkpoint_path)
 
             random.shuffle(iterationTrainExamples)
-
             self.update_policy(adam, iterationTrainExamples)
 
-            if i % 100 == 0:
-                print(missed)
-                print(f"Average episode reward: {np.average(rew_recap)}")
-                print(f"Avg len: {np.average(len_recap)}")
-
-                wandb.log({"Avg episode reward": np.average(rew_recap),
-                           "Avg episode length": np.average(len_recap),
-                           "Attracting state count": self.attractor_count,
-                           "Exploration probability": self.EPSILON,
-                           "Missed paths": sum(missed.values())})
-
-                # env.rework_probas_epoch(len_recap)
-                missed.clear()
-                rew_recap = []
-                len_recap = []
-                self.save(f"{path}/alphabio_{i}.pt")
             self.save(f"{path}/alphabio_final.pt")
 
     def save(self, path):
