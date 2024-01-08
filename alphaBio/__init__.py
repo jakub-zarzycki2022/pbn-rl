@@ -80,34 +80,13 @@ class AlphaBio(nn.Module):
     def predict(self, state, target):
         self.nnet.eval()
         with torch.no_grad():
-            # exploration probability
-            epsilon = self.decrement_epsilon()
+            x = torch.tensor((state, target), dtype=torch.float, device=self.config.device)
+            x = x.t()
+            x = x.unsqueeze(dim=0)
 
-            # explore using edit distance
-            if False and np.random.random() < epsilon:
-                potential_actions = [np.random.randint(0, self.action_count, size=self.config.bins) for _ in range(1)]
-                best_action = potential_actions[0]
-                best_distance = len(best_action)
+            policy, value = self.nnet(x, self.edge_index)
 
-                for potential_action in potential_actions:
-                    new_state = list(state)
-                    for intervention in np.unique(potential_action):
-                        if intervention > 0:
-                            new_state[intervention-1] = 1 - new_state[intervention-1]
-
-                    if self.dst(new_state, target) < best_distance:
-                        best_action = potential_action
-                        best_distance = self.dst(new_state, target)
-
-                action = torch.tensor(best_action, device=self.config.device)
-            else:
-                x = torch.tensor((state, target), dtype=torch.float, device=self.config.device)
-                x = x.t()
-                x = x.unsqueeze(dim=0)
-
-                policy, value = self.nnet(x, self.edge_index)
-
-            return torch.exp(policy).data.numpy()[0], value.data.numpy()[0]
+            return torch.exp(policy).data[0], value.data[0]
 
     def loss_pi(self, targets, outputs):
         return -torch.sum(targets * outputs) / targets.size()[0]
@@ -119,10 +98,10 @@ class AlphaBio(nn.Module):
 
         b_states, b_targets, b_policies, b_values = list(zip(*memory))
 
-        states = torch.FloatTensor(np.stack(b_states), device=self.config.device)
-        targets = torch.FloatTensor(np.stack(b_targets), device=self.config.device)
-        target_policies = torch.FloatTensor(np.array(b_policies), device=self.config.device)
-        target_values = torch.tensor(np.stack(b_values), device=self.config.device)
+        states = torch.tensor(b_states, device=self.config.device, dtype=torch.float)
+        targets = torch.tensor(b_targets, device=self.config.device, dtype=torch.float)
+        target_policies = torch.tensor(b_policies, device=self.config.device, dtype=torch.float)
+        target_values = torch.tensor(b_values, device=self.config.device, dtype=torch.float)
 
         input_tuples = torch.stack((states, targets), dim=2)
 
@@ -153,6 +132,8 @@ class AlphaBio(nn.Module):
 
     def execute_episode(self, mcts: MCTS):
         (state, target), _ = self.env.reset()
+        print(state)
+        print(target)
         self.config.tempThreshold = 1
         trainExamples = []
         episodeStep = 0
@@ -163,7 +144,7 @@ class AlphaBio(nn.Module):
             episodeStep += 1
             temp = int(episodeStep < self.config.tempThreshold)
 
-            pi = mcts.get_action_prob(state, target, temp=temp)
+            pi = mcts.get_action_prob(state, target, temp=1)
             trainExamples.append([state, target, pi, None])
 
             action = np.random.choice(len(pi), p=pi)
@@ -174,7 +155,7 @@ class AlphaBio(nn.Module):
             if done:
                 gamma = self.config.reward_discount_rate
                 for i in range(len(trainExamples)):
-                    trainExamples[i][3] = -1 if truncated else 1  # else reward ** (episodeStep - i)
+                    trainExamples[i][3] = 0 if truncated else 1  # else reward ** (episodeStep - i)
                 return trainExamples
 
     def learn(self,
@@ -184,15 +165,10 @@ class AlphaBio(nn.Module):
               ):
 
         config = self.config
-        trainExamplesHistory = []
 
         adam = optim.Adam(self.nnet.parameters(), lr=config.learning_rate)
         self.wandb = wandb
 
-        (state, target), _ = env.reset()
-        ep_reward = 0.
-        ep_len = 0
-        recap = []
         rew_recap = []
         len_recap = []
 
@@ -215,7 +191,7 @@ class AlphaBio(nn.Module):
                 wandb.log({"episode_len": ep_len,
                            "episode_reward": ep_reward})
 
-            p_bar.update(1)
+                p_bar.update(1)
 
             # training new network, keeping a copy of the old one
             self.save(f"{path}/bdq_{i}.pt")

@@ -1,6 +1,7 @@
 import logging
 import math
 from collections import defaultdict
+import torch
 
 import numpy as np
 
@@ -34,11 +35,18 @@ class MCTS:
             probs: a policy vector where the probability of the ith action is
                    proportional to Nsa[(s,a)]**(1./temp)
         """
-        for i in range(25):
+        print(self.Ns)
+        self.Nsa = defaultdict(int)
+        for i in range(5):
             self.search(state, target, self.env.horizon)
 
-        s = tuple(self.env.render())
+        s = tuple(state)
         counts = [self.Nsa[(s, a)] for a in range(len(s) + 1)]
+        # print("new pair")
+        # print(state)
+        # print(target)
+        # print(counts)
+        # raise ValueError
 
         if temp == 0:
             bestAs = np.array(np.argwhere(counts == np.max(counts))).flatten()
@@ -52,7 +60,7 @@ class MCTS:
         probs = [x / counts_sum for x in counts]
         return probs
 
-    def search(self, state, target, max_depth=20):
+    def search(self, state, target, max_depth=4):
         """
         This function performs one iteration of MCTS. It is recursively called
         till a leaf node is found. The action chosen at each node is one that
@@ -72,29 +80,23 @@ class MCTS:
             v: the negative of the value of the current canonicalBoard
         """
 
-        if max_depth == 0:
+        if max_depth <= 0:
             return 0
 
         max_depth -= 1
 
         state = tuple(state)
         target = tuple(target)
-        self.Es[state] = int(state == target)
-        if self.Es[state] != 0:
-            # terminal node
-            return self.Es[state]
+
+        # terminal node
+        if state == target:
+            return 1
 
         if state not in self.Ps:
             # leaf node
             self.Ps[state], v = self.model.predict(state, target)
-            sum_Ps_s = np.sum(self.Ps[state])
-            if sum_Ps_s > 0:
-                self.Ps[state] /= sum_Ps_s  # renormalize
-            else:
-                # if all valid moves were masked make all valid moves equally probable
-                raise ValueError("Got all zeroes, but shouldn't")
-                # self.Ps[state] = np.ones(len(self.Ps[state]))
-                # self.Ps[state] /= np.sum(self.Ps[state])
+            sum_Ps_s = torch.sum(self.Ps[state])
+            self.Ps[state] /= sum_Ps_s  # renormalize
 
             self.Ns[state] = 0
             return v
@@ -106,12 +108,12 @@ class MCTS:
         for a in range(len(state) + 1):
             if (state, a) in self.Qsa:
                 u = self.Qsa[(state, a)] + \
-                    self.cpuct *\
+                    self.cpuct * \
                     self.Ps[state][a] * \
                     math.sqrt(self.Ns[state]) / \
                     (1 + self.Nsa[(state, a)])
             else:
-                u = self.cpuct * self.Ps[state][a] * math.sqrt(self.Ns[state] + EPS)  # Q = 0 ?
+                u = self.cpuct * self.Ps[state][a] * math.sqrt(self.Ns[state] + EPS)
 
             if u > cur_best:
                 cur_best = u
@@ -119,6 +121,8 @@ class MCTS:
 
         a = best_act
         next_state = self.env.get_next_state(state, [a])
+        if state == next_state:
+            max_depth /= 2
 
         v = self.search(next_state, target, max_depth)
 

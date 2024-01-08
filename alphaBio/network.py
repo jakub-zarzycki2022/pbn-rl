@@ -50,6 +50,6 @@ class NNet(nn.Module):
         value = self.value_head(out)
         policy = self.policy_head(out)
 
-        policy, value = F.log_softmax(policy, dim=2).squeeze(dim=1), torch.tanh(value)
+        policy, value = F.log_softmax(policy, dim=2).squeeze(dim=1), F.softmax(value)
 
         return policy, value

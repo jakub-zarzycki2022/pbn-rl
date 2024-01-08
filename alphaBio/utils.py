@@ -43,11 +43,11 @@ class AgentConfig:
                  epsilon_decay=3_000,
                  gamma=1.,
                  reward_discount_rate=0.9,
-                 learning_rate=0.001,
+                 learning_rate=0.01,
                  bins=3,
                  target_net_update_freq=10000,
                  memory_size=10**6,
-                 batch_size=4,
+                 batch_size=128,
                  learning_starts=288,
                  num_iterations=500_000,
                  num_episodes=10_000):
