@@ -88,7 +88,7 @@ class MCTS:
         if state not in self.Ps:
             # leaf node
             self.Ps[state], v = self.model.predict(state, target)
-            sum_Ps_s = np.sum(self.Ps[state])
+            sum_Ps_s = torch.sum(self.Ps[state])
             self.Ps[state] /= sum_Ps_s  # renormalize
 
             self.Ns[state] = 0
