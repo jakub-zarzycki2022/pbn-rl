@@ -85,7 +85,7 @@ class AlphaBio(nn.Module):
             x = x.unsqueeze(dim=0)
             policy, value = self.nnet(x, self.edge_index)
 
-            return torch.exp(policy).data.numpy()[0], value.data.numpy()[0]
+            return torch.exp(policy).data[0], value.data[0]
 
     def loss_pi(self, targets, outputs):
         return -torch.sum(targets * outputs) / targets.size()[0]
