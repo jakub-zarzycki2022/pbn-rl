@@ -47,9 +47,9 @@ class AgentConfig:
                  bins=3,
                  target_net_update_freq=10000,
                  memory_size=10**6,
-                 batch_size=128,
-                 learning_starts=288,
-                 num_iterations=4_000,
+                 batch_size=32,
+                 learning_starts=0,
+                 num_iterations=100,
                  num_episodes=10_000):
         self.epsilon_start = epsilon_start
         self.epsilon_final = epsilon_final

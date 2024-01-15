@@ -179,7 +179,7 @@ class AlphaBio(nn.Module):
         rew_recap = []
         len_recap = []
 
-        p_bar = tqdm(total=config.num_iteration)
+        p_bar = tqdm(total=config.num_iteration * config.batch_size)
         missed = 0
         short = 0
         total = 0
