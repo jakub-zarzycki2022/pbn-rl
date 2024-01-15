@@ -111,7 +111,7 @@ class AlphaBio(nn.Module):
 
         l_pi = self.loss_pi(target_policies, out_pi)
         l_v = self.loss_v(target_values, out_v)
-        loss = l_pi + l_v
+        loss = l_pi #+ l_v
         print(f"policy loss {l_pi}")
         print(f"value loss {l_v}")
         print(f"total loss {loss}")

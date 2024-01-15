@@ -115,13 +115,11 @@ class MCTS:
         a = best_act
         next_state = self.env.get_next_state(state, [a])
 
-        if next_state == state:
-            max_depth /= 2
+        # if next_state == state:
+        #     max_depth /= 2
 
         v = self.search(next_state, target, max_depth)
 
-        if next_state == state:
-            v *= .9
 
         if (state, a) in self.Qsa:
             self.Qsa[(state, a)] = (self.Nsa[(state, a)] * self.Qsa[(state, a)] + v) / (self.Nsa[(state, a)] + 1)
