@@ -5,6 +5,7 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 
 from pathlib import Path
 
@@ -89,9 +90,10 @@ class AlphaBio(nn.Module):
 
     def loss_pi(self, targets, outputs):
         return -torch.sum(targets * outputs) / targets.size()[0]
+        # return F.kl_div(outputs, targets, reduction="batchmean")
 
     def loss_v(self, targets, outputs):
-        return torch.sum((targets - outputs.view(-1)) ** 2) / targets.size()[0]
+        return F.mse_loss(targets, outputs.view(-1), reduction="mean")
 
     def update_policy(self, adam, memory):
 
@@ -105,10 +107,14 @@ class AlphaBio(nn.Module):
         input_tuples = torch.stack((states, targets), dim=2)
 
         out_pi, out_v = self.nnet(input_tuples, self.edge_index)
+        # out_pi, out_v = torch.exp(out_pi), out_v
 
         l_pi = self.loss_pi(target_policies, out_pi)
         l_v = self.loss_v(target_values, out_v)
         loss = l_pi + l_v
+        print(f"policy loss {l_pi}")
+        print(f"value loss {l_v}")
+        print(f"total loss {loss}")
 
         self.wandb.log({"loss": loss.data})
 
@@ -132,17 +138,17 @@ class AlphaBio(nn.Module):
     def execute_episode(self, mcts: MCTS):
         (state, target), _ = self.env.reset()
         self.config.tempThreshold = 1
-        trainExamples = []
+        episode_history = []
         episodeStep = 0
         # state = self.env.render()
         # target = self.env.target[0]
 
         while True:
             episodeStep += 1
-            temp = int(episodeStep < self.config.tempThreshold)
+            temp = 1
 
             pi = mcts.get_action_prob(state, target, temp=temp)
-            trainExamples.append([state, target, pi, None])
+            episode_history.append([state, target, pi, 0])
 
             action = np.random.choice(len(pi), p=pi)
             state, reward, terminated, truncated, info = self.env.step([action])
@@ -151,9 +157,12 @@ class AlphaBio(nn.Module):
 
             if done:
                 gamma = self.config.reward_discount_rate
-                for i in range(len(trainExamples)):
-                    trainExamples[i][3] = -1 if truncated else 1  # else reward ** (episodeStep - i)
-                return trainExamples
+                for i in range(len(episode_history)):
+                    episode_history[i][3] = -1 if truncated else gamma ** (episodeStep - i - 1)
+                    if episode_history[i][3] > 1:
+                        print(episode_history[i][3], reward, episodeStep - i - 1)
+                        raise ValueError
+                return episode_history
 
     def learn(self,
               env,
@@ -212,9 +221,10 @@ class AlphaBio(nn.Module):
             short = 0
             total = 0
 
-            checkpoint_path = f"{path}/alphaBio_{episode_count // 1000 * 1000}.pt"
-            print(checkpoint_path)
-            self.save(checkpoint_path)
+            if i % 1000 == 0:
+                checkpoint_path = f"{path}/alphaBio_{episode_count // 1000 * 1000}.pt"
+                print(checkpoint_path)
+                self.save(checkpoint_path)
 
             random.shuffle(iterationTrainExamples)
             self.update_policy(adam, iterationTrainExamples)

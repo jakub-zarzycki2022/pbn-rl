@@ -250,6 +250,8 @@ class BranchingDQN(nn.Module):
                 wandb.log({"Avg episode reward": np.average(rew_recap),
                            "Avg episode length": np.average(len_recap),
                            "Attracting state count": self.attractor_count,
+                           "From stable state": env.stable,
+                           "From histogram": env.histogram,
                            "Exploration probability": self.EPSILON,
                            "Missed paths": len(missed)})
 
