@@ -111,7 +111,7 @@ class AlphaBio(nn.Module):
 
         l_pi = self.loss_pi(target_policies, out_pi)
         l_v = self.loss_v(target_values, out_v)
-        loss = l_pi #+ l_v
+        loss = l_pi + l_v
         print(f"policy loss {l_pi}")
         print(f"value loss {l_v}")
         print(f"total loss {loss}")
@@ -157,11 +157,12 @@ class AlphaBio(nn.Module):
 
             if done:
                 gamma = self.config.reward_discount_rate
-                for i in range(len(episode_history)):
-                    episode_history[i][3] = -1 if truncated else gamma ** (episodeStep - i - 1)
-                    if episode_history[i][3] > 1:
-                        print(episode_history[i][3], reward, episodeStep - i - 1)
-                        raise ValueError
+                episode_history[-1][3] = -1 if truncated else 1
+                # for i in range(len(episode_history)):
+                #     episode_history[i][3] = -1 if truncated else 1
+                #     if episode_history[i][3] > 1:
+                #         print(episode_history[i][3], reward, episodeStep - i - 1)
+                #         raise ValueError
                 return episode_history
 
     def learn(self,
