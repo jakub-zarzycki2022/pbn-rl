@@ -1,12 +1,13 @@
-# pbn-rl
-
-Suite of experiments for running Deep Reinforcement Learning for control of Probabilistic Boolean Networks.
+# Deep Reinforcement Learning for Controlled Traversing of Probabilistic Boolean Network Attractor Landscape in the Context of Cellular Reprogramming
+This repository provides the code, and agent models for the manuscript "Deep Reinforcement Learning for Controlled Traversing of Probabilistic Boolean Network Attractor Landscape in the Context of Cellular Reprogramming"
 
 # Environment Requirements
 - CUDA 11.3+
 - Python 3.9+
 
 # Installation
+This project extends the original methods introduced in [Papagiannis, Georgios, et al., 2019](https://arxiv.org/abs/1909.03331).
+
 ## Local
 - Create a python environment using PIP:
     ```sh
