@@ -57,26 +57,14 @@ class BranchingQNetwork(nn.Module):
 
         state, target = observation
 
-        self.model = nn.Sequential(MyBilinear(state, target, 256),
-                                   nn.LeakyReLU(),
-                                   nn.Linear(256, 128),
-                                   nn.LeakyReLU(),
-                                   nn.Linear(128, 64),
-                                   nn.LeakyReLU(),
-                                   nn.Linear(64, 32),
-                                   nn.LeakyReLU(),
+        self.model = nn.Sequential(MyBilinear(state, target, 128),
+                                   nn.ReLU(),
+                                   nn.Linear(128, 128),
+                                   nn.ReLU(),
                                    )
 
-        self.value_head = nn.Sequential(nn.Linear(32, 64),
-                                        nn.LeakyReLU(),
-                                        nn.Linear(64, 1),
-                                        )
-
-        self.adv_heads = nn.ModuleList([nn.Sequential(
-                                            nn.Linear(32, 64),
-                                            nn.LeakyReLU(),
-                                            nn.Linear(64, action_space_dimension),
-                                        ) for _ in range(number_of_actions)])
+        self.value_head = nn.Linear(128, 1)
+        self.adv_heads = nn.ModuleList([nn.Linear(128, action_space_dimension) for _ in range(number_of_actions)])
 
     def forward(self, x):
         out = self.model(x)

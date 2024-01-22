@@ -63,20 +63,21 @@ class BranchingQNetwork(nn.Module):
                                    nn.LeakyReLU(),
                                    nn.Linear(128, 64),
                                    nn.LeakyReLU(),
-                                   nn.Linear(64, 32),
-                                   nn.LeakyReLU(),
                                    )
 
-        self.value_head = nn.Sequential(nn.Linear(32, 64),
+        self.value_head = nn.Sequential(nn.Linear(64, 8),
                                         nn.LeakyReLU(),
-                                        nn.Linear(64, 1),
+                                        nn.Linear(8, 1),
+                                        nn.LeakyReLU(),
                                         )
 
         self.adv_heads = nn.ModuleList([nn.Sequential(
-                                            nn.Linear(32, 64),
+                                            nn.Linear(64, 64),
                                             nn.LeakyReLU(),
                                             nn.Linear(64, action_space_dimension),
-                                        ) for _ in range(number_of_actions)])
+                                            nn.LeakyReLU(),
+                                        )
+                                        for _ in range(number_of_actions)])
 
     def forward(self, x):
         out = self.model(x)

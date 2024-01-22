@@ -138,3 +138,7 @@ models/
 wandb/
 outs/
 **/docker_stderror
+
+# Data
+data/*
+kaban/*

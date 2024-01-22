@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import product
 
 from tqdm import tqdm
 import torch
@@ -13,14 +14,14 @@ import numpy as np
 import gym
 import random
 
-from .network import DuelingNetwork, BranchingQNetwork
+from .network import GCN
 # from .utils import ExperienceReplayMemory
 
 from .memory import ExperienceReplay, PrioritisedER, Transition
 import utils
 
 
-class BranchingDQN(nn.Module):
+class GQN(nn.Module):
 
     def __init__(self, observation, ac, config, env):
         super().__init__()
@@ -34,8 +35,8 @@ class BranchingDQN(nn.Module):
 
         assert self.action_count == self.state_size + 1
 
-        self.q = BranchingQNetwork(observation, ac, config.bins).to(device=config.device)
-        self.target = BranchingQNetwork(observation, ac, config.bins).to(device=config.device)
+        self.q = GCN(observation, ac, config.bins).to(device=config.device)
+        self.target = GCN(observation, ac, config.bins).to(device=config.device)
 
         self.target.load_state_dict(self.q.state_dict())
 
@@ -58,6 +59,27 @@ class BranchingDQN(nn.Module):
         self.wandb = None
 
         self.attractor_count = len(env.attracting_states)
+        self.edge_index = self.get_adj_list()
+        print(self.edge_index)
+
+    def get_adj_list(self):
+        env = self.env
+        top_nodes = []
+        bot_nodes = []
+
+        for top_node in env.graph.nodes:
+            done = set()
+            top_nodes.append(top_node.index)
+            bot_nodes.append(top_node.index)
+
+            for predictor, _, _ in top_node.predictors:
+                 for bot_node_id in predictor:
+                    if bot_node_id not in done:
+                        done.add(bot_node_id)
+                        top_nodes.append(top_node.index)
+                        bot_nodes.append(env.graph.getNodeByID(bot_node_id).index)
+
+        return torch.tensor([top_nodes, bot_nodes], dtype=torch.long, device=self.config.device)
 
     def dst(self, l1, l2):
         ret = 0
@@ -89,10 +111,9 @@ class BranchingDQN(nn.Module):
 
                 action = torch.tensor(best_action, device=self.config.device)
             else:
-                s = np.stack((state, target))
-                x = torch.tensor(s, dtype=torch.float, device=self.config.device).unsqueeze(1)
+                x = torch.tensor((state, target), dtype=torch.float, device=self.config.device).t()
 
-                out = self.q(x).squeeze(0)
+                out = self.q(x, self.edge_index).squeeze(0)
                 action = torch.argmax(out, dim=1).to(self.config.device)
 
             return action
@@ -108,18 +129,18 @@ class BranchingDQN(nn.Module):
         next_states = torch.tensor(np.stack(b_next_states), device=self.config.device).float()
         masks = torch.tensor(np.stack(b_masks), device=self.config.device).float().reshape(-1, 1)
 
-        input_tuples = torch.stack((states, targets))
-        qvals = self.q(input_tuples)
+        input_tuples = torch.stack((states, targets), dim=2).squeeze()
+        qvals = self.q(input_tuples, self.edge_index)
 
         current_q_values = qvals.gather(2, actions).squeeze(-1)
 
         with torch.no_grad():
-            next_input_tuple = torch.stack((next_states, targets))
-            argmax = torch.argmax(self.q(next_input_tuple), dim=2)
+            next_input_tuple = torch.stack((next_states, targets), dim=2).squeeze()
+            argmax = torch.argmax(self.q(next_input_tuple, self.edge_index), dim=2)
 
-            max_next_q_vals = self.target(next_input_tuple).gather(2, argmax.unsqueeze(2)).squeeze(-1)
+            max_next_q_vals = self.target(next_input_tuple, self.edge_index).gather(2, argmax.unsqueeze(2)).squeeze(-1)
 
-        expected_q_vals = rewards + max_next_q_vals * self.gamma * masks
+        expected_q_vals = rewards + max_next_q_vals * self.gamma #* masks
         loss = F.mse_loss(expected_q_vals, current_q_values)
         self.wandb.log({"loss": loss.data})
 
@@ -186,7 +207,7 @@ class BranchingDQN(nn.Module):
             done = terminated | truncated
             ep_len += 1
 
-            memory.store(Transition(
+            transitions.append(Transition(
                 state,
                 target,
                 action,
@@ -197,7 +218,30 @@ class BranchingDQN(nn.Module):
 
             if done:
                 # we need to propagate reward along whole path
-                ep_reward = reward
+                if terminated:
+                    last = transitions[-1]
+                    gamma = self.reward_discount_rate
+                    discount_factor = gamma ** len(transitions)
+                    reward_bonus = last.reward * discount_factor
+
+                    for transition in transitions:
+                        memory.store(Transition(
+                            transition.state,
+                            transition.target,
+                            transition.action,
+                            transition.reward + reward_bonus,
+                            transition.next_state,
+                            transition.done
+                        ))
+                        ep_reward = transition.reward + reward_bonus
+                        reward_bonus /= gamma
+
+                else:
+                    for transition in transitions:
+                        memory.store(transition)
+                        ep_reward = transition.reward
+
+                transitions = []
 
                 # noinspection PyTypeChecker
                 env.rework_probas(ep_len)
@@ -228,7 +272,7 @@ class BranchingDQN(nn.Module):
                            "Avg episode length": np.average(len_recap),
                            "Attracting state count": self.attractor_count,
                            "Exploration probability": self.EPSILON,
-                           "Missed paths": len(missed)})
+                           "Missed paths": sum(missed.values())})
 
                 # env.env.evn.env.rework_probas_epoch(len_recap)
                 missed.clear()

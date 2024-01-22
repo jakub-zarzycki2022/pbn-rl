@@ -47,10 +47,7 @@ parser.add_argument("--log-dir", default="logs", help="path to save logs")
 args = parser.parse_args()
 
 # # Load env
-env = gym.make(f"gym-PBN/BittnerMultiGeneral", N=args.size, horizon=20)
-#env = gym.make(f"gym-PBN/BittnerMulti-7")
-#env = gym.make(f"gym-PBN/BittnerMulti-10")
-#env = gym.make(f"gym-PBN/BittnerMulti-28")
+env = gym.make(f"gym-PBN/GTEx")
 
 # set up logs
 TOP_LEVEL_LOG_DIR = Path(args.log_dir)
@@ -103,11 +100,9 @@ model.learn(
 )
 
 attrs = env.all_attractors
-print(f"final pseudo0attractors were ({len(env.all_attractors)})")
-print(f"final real attractors were ({len(env.real_attractors)})")
-pseudo = set([i[0] for i in env.all_attractors])
-real = set(i[0] for i in env.real_attractors)
-print(f"intersection size: {len(pseudo.intersection(real))}")
+print(f"final attractors were ({len(env.all_attractors)}")
+for attr in env.all_attractors:
+    print(attr)
 
 print("skip testig the model")
 

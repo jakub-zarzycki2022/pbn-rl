@@ -1,22 +1,24 @@
+import os
+import sys
+from collections import deque
+from pickle import Pickler, Unpickler
+from random import shuffle
+from tqdm import tqdm
 import argparse
-import itertools
-import random
-from collections import defaultdict
 from pathlib import Path
 
-import gymnasium as gym
 import gym_PBN
+import gymnasium as gym
 import numpy as np
-import torch
-from gym_PBN.utils.eval import compute_ssd_hist
 
 import wandb
-from bdq_model import BranchingDQN
+from alphaBio import AlphaBio
 
-from bdq_model.utils import ExperienceReplayMemory, AgentConfig
+from alphaBio.utils import ExperienceReplayMemory, AgentConfig
+from alphaBio.MCTS import MCTS
 
-model_cls = BranchingDQN
-model_name = "BranchingDQN"
+model_cls = AlphaBio
+model_name = "AlphaBio"
 
 # Parse settings
 parser = argparse.ArgumentParser(description="Train an RL model for target control.")
@@ -70,6 +72,7 @@ def get_latest_checkpoint():
     else:
         return None
 
+
 def state_equals(state1, state2):
     for i in range(len(state2)):
         if state1[i] != state2[i]:
@@ -80,7 +83,7 @@ def state_equals(state1, state2):
 config = AgentConfig()
 
 state_len = env.observation_space.shape[0]
-model = BranchingDQN((state_len, state_len), state_len + 1, config, env)
+model = AlphaBio((state_len, state_len), state_len + 1, config, env)
 model.to(device=model.config.device)
 
 # config = model.get_config()

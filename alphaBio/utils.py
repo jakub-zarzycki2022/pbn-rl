@@ -7,9 +7,8 @@ import os
 import pandas as pd
 
 import matplotlib.pyplot as plt
-
-plt.style.use('ggplot')
 from scipy.ndimage.filters import gaussian_filter1d
+plt.style.use('ggplot')
 
 
 def arguments():
@@ -41,16 +40,17 @@ class AgentConfig:
     def __init__(self,
                  epsilon_start=1.,
                  epsilon_final=0.05,
-                 epsilon_decay=5_000,
+                 epsilon_decay=1_000,
                  gamma=1.,
                  reward_discount_rate=0.9,
-                 learning_rate=0.0001,
+                 learning_rate=0.001,
                  bins=3,
-                 target_net_update_freq=3000,
-                 memory_size=10**4,
+                 target_net_update_freq=10000,
+                 memory_size=10**6,
                  batch_size=256,
-                 learning_starts=288,
-                 time_steps=500_000):
+                 learning_starts=0,
+                 num_iterations=100,
+                 num_episodes=10_000):
         self.epsilon_start = epsilon_start
         self.epsilon_final = epsilon_final
         self.epsilon_decay = epsilon_decay
@@ -67,8 +67,8 @@ class AgentConfig:
         self.batch_size = batch_size
 
         self.learning_starts = max(learning_starts, batch_size)
-        self.time_steps = time_steps
-        print(self.time_steps)
+        self.num_iteration = num_iterations
+
         self.bins = bins
 
         use_cuda = torch.cuda.is_available()

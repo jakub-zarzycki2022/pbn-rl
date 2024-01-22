@@ -11,12 +11,13 @@ import torch
 from gym_PBN.utils.eval import compute_ssd_hist
 
 import wandb
-from bdq_model import BranchingDQN
+# from graph_model import GQN
+from NGQN import GQN
 
-from bdq_model.utils import ExperienceReplayMemory, AgentConfig
+from graph_model.utils import ExperienceReplayMemory, AgentConfig
 
-model_cls = BranchingDQN
-model_name = "BranchingDQN"
+model_cls = GQN
+model_name = "GQN"
 
 # Parse settings
 parser = argparse.ArgumentParser(description="Train an RL model for target control.")
@@ -80,7 +81,7 @@ def state_equals(state1, state2):
 config = AgentConfig()
 
 state_len = env.observation_space.shape[0]
-model = BranchingDQN((state_len, state_len), state_len + 1, config, env)
+model = GQN((state_len, state_len), state_len + 1, config, env)
 model.to(device=model.config.device)
 
 # config = model.get_config()
@@ -103,11 +104,9 @@ model.learn(
 )
 
 attrs = env.all_attractors
-print(f"final pseudo0attractors were ({len(env.all_attractors)})")
-print(f"final real attractors were ({len(env.real_attractors)})")
-pseudo = set([i[0] for i in env.all_attractors])
-real = set(i[0] for i in env.real_attractors)
-print(f"intersection size: {len(pseudo.intersection(real))}")
+print(f"final attractors were ({len(env.all_attractors)}")
+for attr in env.all_attractors:
+    print(attr)
 
 print("skip testig the model")
 
