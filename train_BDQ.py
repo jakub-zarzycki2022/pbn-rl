@@ -103,9 +103,11 @@ model.learn(
 )
 
 attrs = env.all_attractors
-print(f"final attractors were ({len(env.all_attractors)}")
-for attr in env.all_attractors:
-    print(attr)
+print(f"final pseudo0attractors were ({len(env.all_attractors)})")
+print(f"final real attractors were ({len(env.real_attractors)})")
+pseudo = set([i[0] for i in env.all_attractors])
+real = set(i[0] for i in env.real_attractors)
+print(f"intersection size: {len(pseudo.intersection(real))}")
 
 print("skip testig the model")
 

@@ -186,7 +186,7 @@ class BranchingDQN(nn.Module):
             done = terminated | truncated
             ep_len += 1
 
-            transitions.append(Transition(
+            memory.store(Transition(
                 state,
                 target,
                 action,
@@ -197,30 +197,7 @@ class BranchingDQN(nn.Module):
 
             if done:
                 # we need to propagate reward along whole path
-                if terminated:
-                    last = transitions[-1]
-                    gamma = self.reward_discount_rate
-                    discount_factor = gamma ** len(transitions)
-                    reward_bonus = last.reward * discount_factor
-
-                    for transition in transitions:
-                        memory.store(Transition(
-                            transition.state,
-                            transition.target,
-                            transition.action,
-                            transition.reward + reward_bonus,
-                            transition.next_state,
-                            transition.done
-                        ))
-                        ep_reward = transition.reward + reward_bonus
-                        reward_bonus /= gamma
-
-                else:
-                    for transition in transitions:
-                        memory.store(transition)
-                        ep_reward = transition.reward
-
-                transitions = []
+                ep_reward = reward
 
                 # noinspection PyTypeChecker
                 env.rework_probas(ep_len)
@@ -250,8 +227,6 @@ class BranchingDQN(nn.Module):
                 wandb.log({"Avg episode reward": np.average(rew_recap),
                            "Avg episode length": np.average(len_recap),
                            "Attracting state count": self.attractor_count,
-                           "From stable state": env.stable,
-                           "From histogram": env.histogram,
                            "Exploration probability": self.EPSILON,
                            "Missed paths": len(missed)})
 
