@@ -23,12 +23,10 @@ from matplotlib import pyplot as plt
 
 from gym_PBN.utils.get_attractors_from_cabean import get_attractors
 
-#model_cls = AlphaBio
-#model_name = "AlphaBio"
-
 parser = argparse.ArgumentParser()
-parser.add_argument('-n', type=int)
-parser.add_argument('--model-path')
+parser.add_argument('-n', type=int, required=True)
+parser.add_argument('--model-path', required=True)
+parser.add_argument('--attractors', type=int, default=3)
 args = parser.parse_args()
 
 model_cls = BranchingDQN
@@ -36,27 +34,13 @@ model_name = "BranchingDQN"
 
 N = args.n
 model_path = args.model_path
-env = gym.make("gym-PBN/BittnerMultiGeneral", N=N)
-#env = gym.make("gym-PBN/BittnerMulti-28")
+min_attractors = args.attractors
+
+env = gym.make("gym-PBN/BittnerMultiGeneral", N=N, min_attractors=min_attractors)
 env.reset()
 
 
 DEVICE = 'cpu'
-
-#model_path = 'models/laptop1_pbn28_backprop_reward/bdq_final.pt'; 
-#model_path = 'models/pbn10_pbn10_bdq/bdq_final.pt'; 
-#model_path = 'models/for_paper_new_arch_pbn28_cluster/bdq_100000.pt';
-#model_path = 'models/jz_v3_pbn7_for_paper/bdq_final.pt';
-#model_path = 'models/cluster9_pbn28_256input_complicated/bdq_247000.pt'
-
-# works well
-# model_path = 'models/laptop2_pbn7_256input_neg_reward/alphaBio_36000.pt'
-
-#model_path = "models/laptop3_pbn7_256input_neg_reward/alphaBio_15000.pt"
-#model_path = "models/cluster3_pbn28_alphaBio_deep_trees/alphabio_final.pt"
-#model_path = "models/get_attractor_sizes_pbn7_BN/bdq_final.pt"
-#model_path = "models/laptop_pbn10_BN/bdq_final.pt"
-
 
 
 config = AgentConfig()
@@ -72,8 +56,8 @@ action = 0
 # action = [np.random.choice(range(N+1), p=policy)]
 
 action = model.predict(state, target)
-print(action); 
-state, *_ = env.step(action); 
+print(action)
+state, *_ = env.step(action)
 print(state)
 
 
@@ -88,14 +72,7 @@ failed_pairs = []
 all_attractors = env.all_attractors
 print("genereted attractors:")
 for a in all_attractors:
-  print(a)
-  
-print("and")
-for a in env.attracting_states:
-  print(a)
-  
-print("\n\nround 2")
-
+    print(a)
 
 lens = []
 failed = 0
