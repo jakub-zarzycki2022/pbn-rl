@@ -42,14 +42,14 @@ class AgentConfig:
                  epsilon_final=0.05,
                  epsilon_decay=1_000,
                  gamma=1.,
-                 reward_discount_rate=0.9,
-                 learning_rate=0.001,
+                 reward_discount_rate=0.995,
+                 learning_rate=0.0001,
                  bins=3,
                  target_net_update_freq=10000,
                  memory_size=10**6,
                  batch_size=256,
                  learning_starts=0,
-                 num_iterations=100,
+                 num_iterations=100_000,
                  num_episodes=10_000):
         self.epsilon_start = epsilon_start
         self.epsilon_final = epsilon_final

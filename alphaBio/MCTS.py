@@ -8,6 +8,8 @@ import numpy as np
 EPS = 1e-8
 
 
+# TODO: Make the search parallel
+# TODO: Add more variation to the reward / value function
 class MCTS:
     """
     This class handles the MCTS tree.
@@ -19,12 +21,11 @@ class MCTS:
         self.cpuct = 1
         self.args = None
         self.Qsa = {}  # stores Q values for s,a (as defined in the paper)
-        self.Nsa = defaultdict(int)  # stores #times edge s,a was visited
+        self.Nsa = defaultdict(int)  # stores #times edge s,t,a was visited
         self.Ns = {}  # stores #times board s was visited
         self.Ps = {}  # stores initial policy (returned by neural net)
 
         self.Es = {}  # stores game.getGameEnded ended for board s
-        self.Vs = {}  # stores game.getValidMoves for board s
 
     def get_action_prob(self, state, target, temp=1):
         """
@@ -33,46 +34,21 @@ class MCTS:
 
         Returns:
             probs: a policy vector where the probability of the ith action is
-                   proportional to Nsa[(s,a)]**(1./temp)
+                   proportional to Nsa[(s,t,a)]**(1./temp)
         """
-        for i in range(10):
-            self.search(state, target, self.env.horizon)
+        for i in range(5):
+            self.search(state, target, 5)
 
         s = tuple(state)
-        counts = [self.Nsa[(s, a)] for a in range(len(s) + 1)]
-
-        if temp == 0:
-            bestAs = np.array(np.argwhere(counts == np.max(counts))).flatten()
-            bestA = np.random.choice(bestAs)
-            probs = [0] * len(counts)
-            probs[bestA] = 1
-            return probs
+        t = tuple(target)
+        counts = [self.Nsa[(s, t, a)] for a in range(len(s) + 1)]
 
         counts = [x ** (1. / temp) for x in counts]
         counts_sum = float(sum(counts))
         probs = [x / counts_sum for x in counts]
         return probs
 
-    def search(self, state, target, max_depth=10):
-        """
-        This function performs one iteration of MCTS. It is recursively called
-        till a leaf node is found. The action chosen at each node is one that
-        has the maximum upper confidence bound as in the paper.
-
-        Once a leaf node is found, the neural network is called to return an
-        initial policy P and a value v for the state. This value is propagated
-        up the search path. In case the leaf node is a terminal state, the
-        outcome is propagated up the search path. The values of Ns, Nsa, Qsa are
-        updated.
-
-        NOTE: the return values are the negative of the value of the current
-        state. This is done since v is in [-1,1] and if v is the value of a
-        state for the current player, then its value is -v for the other player.
-
-        Returns:
-            v: the value of the current state
-        """
-
+    def search(self, state, target, max_depth=20):
         if max_depth <= 0:
             return -1
 
@@ -82,16 +58,17 @@ class MCTS:
         target = tuple(target)
 
         if state == target:
-            self.Es[state] = 1
+            self.Es[(state, target)] = 1
             return 1
 
-        if state not in self.Ps:
+        if (state, target) not in self.Ps:
             # leaf node
-            self.Ps[state], v = self.model.predict(state, target)
-            sum_Ps_s = torch.sum(self.Ps[state])
-            self.Ps[state] /= sum_Ps_s  # renormalize
+            self.Ps[(state, target)], v = self.model.predict(state, target)
+            sum_Ps_s = torch.sum(self.Ps[(state, target)])
+            self.Ps[(state, target)] /= sum_Ps_s  # renormalize
 
-            self.Ns[state] = 0
+            self.Ns[(state, target)] = 0
+            # print("s not in Ps")
             return v
 
         cur_best = float('-inf')
@@ -99,14 +76,14 @@ class MCTS:
 
         # pick the action with the highest upper confidence bound
         for a in range(len(state) + 1):
-            if (state, a) in self.Qsa:
-                u = self.Qsa[(state, a)] + \
+            if (state, target, a) in self.Qsa:
+                u = self.Qsa[(state, target, a)] + \
                     self.cpuct * \
-                    self.Ps[state][a] * \
-                    math.sqrt(self.Ns[state]) / \
-                    (1 + self.Nsa[(state, a)])
+                    self.Ps[(state, target)][a] * \
+                    math.sqrt(self.Ns[(state, target)]) / \
+                    (1 + self.Nsa[(state, target, a)])
             else:
-                u = self.cpuct * self.Ps[state][a] * math.sqrt(self.Ns[state] + EPS)
+                u = self.cpuct * self.Ps[(state, target)][a] * math.sqrt(self.Ns[(state, target)] + EPS)
 
             if u > cur_best:
                 cur_best = u
@@ -120,13 +97,13 @@ class MCTS:
 
         v = self.search(next_state, target, max_depth)
 
-
-        if (state, a) in self.Qsa:
-            self.Qsa[(state, a)] = (self.Nsa[(state, a)] * self.Qsa[(state, a)] + v) / (self.Nsa[(state, a)] + 1)
-            self.Nsa[(state, a)] += 1
+        if (state, target, a) in self.Qsa:
+            self.Qsa[(state, target, a)] = (self.Nsa[(state, target, a)] * self.Qsa[(state, target, a)] + v) / \
+                                           (self.Nsa[(state, target, a)] + 1)
+            self.Nsa[(state, target, a)] += 1
         else:
-            self.Qsa[(state, a)] = v
-            self.Nsa[(state, a)] = 1
+            self.Qsa[(state, target, a)] = v
+            self.Nsa[(state, target, a)] = 1
 
-        self.Ns[state] += 1
+        self.Ns[(state, target)] += 1
         return v

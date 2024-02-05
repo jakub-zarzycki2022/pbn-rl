@@ -48,9 +48,12 @@ class AlphaBio(nn.Module):
 
         self.wandb = None
 
-        self.attractor_count = len(env.attracting_states)
         self.edge_index = self.get_adj_list()
         print(self.edge_index)
+
+    @property
+    def attractor_count(self):
+        return len(self.env.attracting_states)
 
     def get_adj_list(self):
         env = self.env
@@ -89,8 +92,8 @@ class AlphaBio(nn.Module):
             return torch.exp(policy).data[0], value.data[0]
 
     def loss_pi(self, targets, outputs):
-        return -torch.sum(targets * outputs) / targets.size()[0]
-        # return F.kl_div(outputs, targets, reduction="batchmean")
+        #return -torch.sum(targets * outputs) / targets.size()[0]
+        return F.kl_div(outputs, targets, reduction="batchmean")
 
     def loss_v(self, targets, outputs):
         return F.mse_loss(targets, outputs.view(-1), reduction="mean")
@@ -157,12 +160,14 @@ class AlphaBio(nn.Module):
 
             if done:
                 gamma = self.config.reward_discount_rate
-                episode_history[-1][3] = -1 if truncated else 1
-                # for i in range(len(episode_history)):
-                #     episode_history[i][3] = -1 if truncated else 1
-                #     if episode_history[i][3] > 1:
-                #         print(episode_history[i][3], reward, episodeStep - i - 1)
-                #         raise ValueError
+                discount = -1. if truncated else 1.
+                # episode_history[-1][3] = -1 if truncated else 1
+                for i in range(len(episode_history) - 1, -1, -1):
+                    episode_history[i][3] = discount
+                    discount *= gamma
+                    if episode_history[i][3] > 1:
+                        print(episode_history[i][3], reward, episodeStep - i - 1)
+                        raise ValueError
                 return episode_history
 
     def learn(self,
@@ -173,7 +178,8 @@ class AlphaBio(nn.Module):
 
         config = self.config
 
-        adam = optim.Adam(self.nnet.parameters(), lr=config.learning_rate)
+        adam = optim.Adam(self.nnet.parameters(), lr=config.learning_rate, foreach=True)
+        print(config.learning_rate)
         self.wandb = wandb
 
         rew_recap = []
@@ -184,11 +190,13 @@ class AlphaBio(nn.Module):
         short = 0
         total = 0
         episode_count = 0
+        iterationTrainExamples = []
 
         for i in range(config.num_iteration):
-            iterationTrainExamples = []
+            # iterationTrainExamples = []
 
-            while len(iterationTrainExamples) < config.batch_size:
+            # while len(iterationTrainExamples) < config.batch_size:
+            for _ in range(20):
                 mcts = MCTS(env, self)  # reset search tree
                 episode = self.execute_episode(mcts)
                 episode_count += 1
@@ -227,8 +235,12 @@ class AlphaBio(nn.Module):
                 print(checkpoint_path)
                 self.save(checkpoint_path)
 
-            random.shuffle(iterationTrainExamples)
-            self.update_policy(adam, iterationTrainExamples)
+            # random.shuffle(iterationTrainExamples)
+            if len(iterationTrainExamples) > config.memory_size:
+                print("removing old memories")
+                iterationTrainExamples = iterationTrainExamples[-config.memory_size:]
+            batch = random.sample(iterationTrainExamples, k=self.config.batch_size)
+            self.update_policy(adam, batch)
 
             self.save(f"{path}/alphabio_final.pt")
 
