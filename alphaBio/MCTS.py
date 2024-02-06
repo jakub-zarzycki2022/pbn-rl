@@ -1,11 +1,22 @@
 import logging
 import math
 from collections import defaultdict
+from itertools import permutations
+
 import torch
 
 import numpy as np
 
 EPS = 1e-8
+
+
+def a_to_action(a):
+    action = []
+    for _ in range(3):
+        action.append(a % 8)
+        a //= 8
+
+    return action
 
 
 # TODO: Make the search parallel
@@ -36,12 +47,42 @@ class MCTS:
             probs: a policy vector where the probability of the ith action is
                    proportional to Nsa[(s,t,a)]**(1./temp)
         """
+        s = tuple(state)
+        t = tuple(target)
+        dst = sum([a != b for a, b in zip(s, t)])
+        print(dst)
+        actions = len(state) + 1
+
+        if dst == 1:
+            probs = [0] * (len(state) + 1) ** 3
+            for i in range(len(state)):
+                if s[i] != t[i]:
+                    gen_id = i + 1
+            action_id = (actions * actions * gen_id) + actions * gen_id + gen_id
+            probs[action_id] = 1.
+            return probs
+
+        if dst == 2 or dst == 3:
+            genes = []
+            probs = [0] * (len(state) + 1) ** 3
+
+            for i in range(len(state)):
+                if s[i] != t[i]:
+                    genes.append(i + 1)
+
+            if dst == 2:
+                genes.append(0)
+
+            for a, b, c in permutations(genes):
+                action_id = (actions * actions * a) + actions * b + c
+                probs[action_id] += 1. / 6
+
+            return probs
+
         for i in range(5):
             self.search(state, target, 5)
 
-        s = tuple(state)
-        t = tuple(target)
-        counts = [self.Nsa[(s, t, a)] for a in range(len(s) + 1)]
+        counts = [self.Nsa[(s, t, a)] for a in range((len(s) + 1)**3)]
 
         counts = [x ** (1. / temp) for x in counts]
         counts_sum = float(sum(counts))
@@ -75,7 +116,7 @@ class MCTS:
         best_act = -1
 
         # pick the action with the highest upper confidence bound
-        for a in range(len(state) + 1):
+        for a in range((len(state) + 1)**3):
             if (state, target, a) in self.Qsa:
                 u = self.Qsa[(state, target, a)] + \
                     self.cpuct * \
@@ -90,7 +131,8 @@ class MCTS:
                 best_act = a
 
         a = best_act
-        next_state = self.env.get_next_state(state, [a])
+        action = a_to_action(a)
+        next_state = self.env.get_next_state(state, action)
 
         # if next_state == state:
         #     max_depth /= 2

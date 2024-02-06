@@ -9,7 +9,6 @@ from torch.distributions import Categorical
 class NNet(nn.Module):
 
     def __init__(self, observation, action_space_dimension, number_of_actions):
-
         super().__init__()
 
         self.ac_dim = action_space_dimension
@@ -24,8 +23,8 @@ class NNet(nn.Module):
                                         )
 
         self.conv1 = EdgeConv(self.conv_model, aggr="add")
-        self.conv2 = nn.Conv1d(28, 28, 3, padding=1, stride=1)
-        self.conv3 = nn.Conv1d(28, 28, 3, padding=1, stride=1)
+        self.conv2 = nn.Conv1d(state, target, 3, padding=1, stride=1)
+        self.conv3 = nn.Conv1d(state, target, 3, padding=1, stride=1)
 
         self.model = nn.Sequential(nn.Linear(self.in_size, 256),
                                    nn.ReLU(),
@@ -36,12 +35,12 @@ class NNet(nn.Module):
                                    )
 
         self.pooling = nn.AvgPool1d(4)
-        self.bn1 = nn.BatchNorm1d(28)
-        self.bn2 = nn.BatchNorm1d(28)
-        self.bn3 = nn.BatchNorm1d(28)
+        self.bn1 = nn.BatchNorm1d(state)
+        self.bn2 = nn.BatchNorm1d(state)
+        self.bn3 = nn.BatchNorm1d(state)
 
         self.value_head = nn.Linear(256, 1)
-        self.policy_head = nn.Linear(256, action_space_dimension)
+        self.policy_head = nn.Linear(256, action_space_dimension**3)
 
         self.adv_heads = nn.ModuleList([nn.Linear(256, action_space_dimension) for _ in range(number_of_actions)])
 

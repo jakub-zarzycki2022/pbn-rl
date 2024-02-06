@@ -14,7 +14,7 @@ import gym
 import random
 
 from .network import NNet
-from .MCTS import MCTS
+from .MCTS import MCTS, a_to_action
 
 
 class AlphaBio(nn.Module):
@@ -154,7 +154,7 @@ class AlphaBio(nn.Module):
             episode_history.append([state, target, pi, 0])
 
             action = np.random.choice(len(pi), p=pi)
-            state, reward, terminated, truncated, info = self.env.step([action])
+            state, reward, terminated, truncated, info = self.env.step(a_to_action(action))
 
             done = terminated | truncated
 
@@ -239,7 +239,7 @@ class AlphaBio(nn.Module):
             if len(iterationTrainExamples) > config.memory_size:
                 print("removing old memories")
                 iterationTrainExamples = iterationTrainExamples[-config.memory_size:]
-            batch = random.sample(iterationTrainExamples, k=self.config.batch_size)
+            batch = random.sample(iterationTrainExamples, k=min(self.config.batch_size, len(iterationTrainExamples)))
             self.update_policy(adam, batch)
 
             self.save(f"{path}/alphabio_final.pt")
