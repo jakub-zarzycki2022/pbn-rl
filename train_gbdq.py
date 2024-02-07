@@ -13,7 +13,7 @@ from gym_PBN.utils.eval import compute_ssd_hist
 import wandb
 from gbdq_model import GBDQ
 
-from bdq_model.utils import ExperienceReplayMemory, AgentConfig
+from gbdq_model.utils import ExperienceReplayMemory, AgentConfig
 
 model_cls = GBDQ
 model_name = "GBDQ"
