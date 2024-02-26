@@ -44,7 +44,7 @@ class AgentConfig:
                  epsilon_decay=5_000,
                  gamma=1.,
                  reward_discount_rate=0.9,
-                 learning_rate=0.0001,
+                 learning_rate=0.001,
                  bins=3,
                  target_net_update_freq=5000,
                  memory_size=10**5,

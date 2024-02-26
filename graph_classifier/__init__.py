@@ -137,7 +137,12 @@ class GraphClassifier(nn.Module):
                     memory[historical_state][attractor_id] += 1
 
                 history = []
-                state = tuple([random.randint(0, 1) for _ in range(state_size)])
+
+                if random.random() < 0.01:
+                    state = random.choice(list(memory.keys()))
+                else:
+                    state = tuple([random.randint(0, 1) for _ in range(state_size)])
+
                 env.graph.setState(state)
             else:
                 state, _, _, _, _ = env.step([])
