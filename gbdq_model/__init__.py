@@ -159,9 +159,8 @@ class GBDQ(nn.Module):
               ):
 
         config = self.config
-        self.positive = .90
-        self.pos_bs = int(self.positive * config.batch_size)
-        self.neg_bs = config.batch_size - self.pos_bs
+        self.pos_bs = config.batch_size
+        self.neg_bs = config.batch_size
 
         memory_positive = ExperienceReplay(config.memory_size)
         memory_negative = ExperienceReplay(config.memory_size)
@@ -211,7 +210,7 @@ class GBDQ(nn.Module):
 
             if len(self.env.all_attractors) > self.attractor_count:
                 self.attractor_count = len(self.env.all_attractors)
-                # self.EPSILON = max(self.EPSILON, 0.2)
+                self.EPSILON = max(self.EPSILON, 0.3)
 
             ep_len += 1
 
