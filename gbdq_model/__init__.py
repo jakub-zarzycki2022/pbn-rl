@@ -28,14 +28,14 @@ class GBDQ(nn.Module):
         self.EPSILON = config.epsilon_start
         self.env = env
         self.bins = config.bins
-        self.state_size, self.target_size = observation
+        self.state_size = observation
 
         self.action_count = ac
 
         assert self.action_count == self.state_size + 1
 
-        self.q = GraphBranchingQNetwork(observation, ac, config.bins).to(device=config.device)
-        self.target = GraphBranchingQNetwork(observation, ac, config.bins).to(device=config.device)
+        self.q = GraphBranchingQNetwork((observation, observation), ac, config.bins).to(device=config.device)
+        self.target = GraphBranchingQNetwork((observation, observation), ac, config.bins).to(device=config.device)
 
         self.target.load_state_dict(self.q.state_dict())
 
@@ -187,24 +187,24 @@ class GBDQ(nn.Module):
             new_state, reward, terminated, truncated, infos = env.step(env_action)
             done = terminated | truncated
 
-            if terminated:
-                memory_positive.store(Transition(
-                    state,
-                    target,
-                    action,
-                    reward,
-                    new_state,
-                    done
-                ))
-            else:
-                memory_negative.store(Transition(
-                    state,
-                    target,
-                    action,
-                    reward,
-                    new_state,
-                    done
-                ))
+            # if terminated:
+            memory_positive.store(Transition(
+                state,
+                target,
+                action,
+                reward,
+                new_state,
+                done
+            ))
+            # else:
+            #     memory_negative.store(Transition(
+            #         state,
+            #         target,
+            #         action,
+            #         reward,
+            #         new_state,
+            #         done
+            #     ))
 
             if truncated:
                 missed[(self.env.state_attractor_id, self.env.target_attractor_id)] += 1

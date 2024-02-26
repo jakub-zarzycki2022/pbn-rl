@@ -34,14 +34,26 @@ class GraphBranchingQNetwork(nn.Module):
 
         self.in_size = state * state
 
-        self.conv_model = nn.Sequential(nn.Linear(4, 4),
+        self.conv_model1 = nn.Sequential(nn.Linear(4, 16),
                                         nn.ReLU(),
-                                        nn.Linear(4, observation[0]),
+                                        nn.Linear(16, observation[0]),
                                         )
 
+        self.conv_model2 = nn.Sequential(nn.Linear(4, 16),
+                                         nn.ReLU(),
+                                         nn.Linear(16, observation[0]),
+                                         )
+
+        self.conv_model3 = nn.Sequential(nn.Linear(4, 16),
+                                         nn.ReLU(),
+                                         nn.Linear(16, observation[0]),
+                                         )
+
         self.conv1 = EdgeConv(self.conv_model, aggr="add")
-        self.conv2 = nn.Conv1d(state, target, 3, padding=1, stride=1)
-        self.conv3 = nn.Conv1d(state, target, 3, padding=1, stride=1)
+        self.conv2 = EdgeConv(self.conv_model, aggr="add")
+        self.conv3 = EdgeConv(self.conv_model, aggr="add")
+        # self.conv2 = nn.Conv1d(state, target, 3, padding=1, stride=1)
+        # self.conv3 = nn.Conv1d(state, target, 3, padding=1, stride=1)
 
         self.model = nn.Sequential(nn.Linear(self.in_size, 256),
                                    nn.ReLU(),
