@@ -29,13 +29,14 @@ class GBDQ(nn.Module):
         self.env = env
         self.bins = config.bins
         self.state_size = observation
+        print(observation)
 
         self.action_count = ac
 
         assert self.action_count == self.state_size + 1
 
-        self.q = GraphBranchingQNetwork((observation, observation), ac, config.bins).to(device=config.device)
-        self.target = GraphBranchingQNetwork((observation, observation), ac, config.bins).to(device=config.device)
+        self.q = GraphBranchingQNetwork(observation, ac, config.bins).to(device=config.device)
+        self.target = GraphBranchingQNetwork(observation, ac, config.bins).to(device=config.device)
 
         self.target.load_state_dict(self.q.state_dict())
 

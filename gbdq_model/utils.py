@@ -42,8 +42,8 @@ class AgentConfig:
                  epsilon_start=1.,
                  epsilon_final=0.0,
                  epsilon_decay=5_000,
-                 gamma=1.,
-                 reward_discount_rate=1.,
+                 gamma=None, #deprecated
+                 reward_discount_rate=.99,
                  learning_rate=0.0001,
                  bins=3,
                  target_net_update_freq=5000,
@@ -57,7 +57,7 @@ class AgentConfig:
         self.epsilon_by_frame = lambda i: \
             self.epsilon_final + (self.epsilon_start - self.epsilon_final) * np.exp(-1. * i / self.epsilon_decay)
 
-        self.gamma = gamma
+        self.gamma = reward_discount_rate
         self.reward_discount_rate = reward_discount_rate
         self.lr = learning_rate
         self.learning_rate = learning_rate

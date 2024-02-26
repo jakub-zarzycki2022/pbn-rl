@@ -30,28 +30,28 @@ class GraphBranchingQNetwork(nn.Module):
         self.ac_dim = action_space_dimension
         self.n = number_of_actions
 
-        state, target = observation
+        state = observation
 
         self.in_size = state * state
 
-        self.conv_model1 = nn.Sequential(nn.Linear(4, 16),
+        self.conv_model1 = nn.Sequential(nn.Linear(2 * 2, 16),
                                         nn.ReLU(),
-                                        nn.Linear(16, observation[0]),
+                                        nn.Linear(16, state),
                                         )
 
-        self.conv_model2 = nn.Sequential(nn.Linear(4, 16),
+        self.conv_model2 = nn.Sequential(nn.Linear(2 * state, 16),
                                          nn.ReLU(),
-                                         nn.Linear(16, observation[0]),
+                                         nn.Linear(16, state),
                                          )
 
-        self.conv_model3 = nn.Sequential(nn.Linear(4, 16),
+        self.conv_model3 = nn.Sequential(nn.Linear(2 * state, 16),
                                          nn.ReLU(),
-                                         nn.Linear(16, observation[0]),
+                                         nn.Linear(16, state),
                                          )
 
-        self.conv1 = EdgeConv(self.conv_model, aggr="add")
-        self.conv2 = EdgeConv(self.conv_model, aggr="add")
-        self.conv3 = EdgeConv(self.conv_model, aggr="add")
+        self.conv1 = EdgeConv(self.conv_model1, aggr="add")
+        self.conv2 = EdgeConv(self.conv_model2, aggr="add")
+        self.conv3 = EdgeConv(self.conv_model3, aggr="add")
         # self.conv2 = nn.Conv1d(state, target, 3, padding=1, stride=1)
         # self.conv3 = nn.Conv1d(state, target, 3, padding=1, stride=1)
 
@@ -74,9 +74,9 @@ class GraphBranchingQNetwork(nn.Module):
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor):
         out = self.conv1(x, edge_index)
         out = F.relu(self.bn1(out))
-        out = self.conv2(out)
+        out = self.conv2(out, edge_index)
         out = F.relu(self.bn2(out))
-        out = self.conv3(out)
+        out = self.conv3(out, edge_index)
         out = F.relu(self.bn3(out))
         # out = self.pooling(out)
 
