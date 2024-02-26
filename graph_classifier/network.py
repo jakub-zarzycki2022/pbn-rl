@@ -51,6 +51,5 @@ class GraphClassifierNetwork(nn.Module):
         out = self.model(out)
 
         probas = self.policy_head(out)
-        probas /= sum(probas)
-
-        return probas
+        print(probas.shape)
+        return F.log_softmax(probas, dim=1)

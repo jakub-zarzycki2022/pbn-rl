@@ -62,7 +62,7 @@ class GraphClassifier(nn.Module):
         if len(memory) == 0:
             return -1
 
-        sample = random.sample(memory.keys(), min(batch_size, len(memory)))
+        sample = random.sample(tuple(memory.keys()), min(batch_size, len(memory)))
         # print("memory: ", memory.keys())
         # print("sample: ", [a for a in memory])
 
@@ -79,11 +79,20 @@ class GraphClassifier(nn.Module):
                                                       device=self.config.device).unsqueeze(dim=2),
                                          edge_index=self.edge_index)
 
-        loss = -F.kl_div(net_policy, torch.tensor(memory_policy))
+        print("net: ", torch.exp(net_policy[0]))
+        print("real: ", memory_policy[0])
+        print("dif: ", F.kl_div(net_policy[0], torch.tensor(memory_policy[0],
+                                             dtype=torch.float,
+                                             device=self.config.device)))
+
+        loss = F.kl_div(net_policy, torch.tensor(memory_policy,
+                                                  dtype=torch.float,
+                                                  device=self.config.device))
         self.wandb.log({"loss": loss.data})
 
         adam.zero_grad()
         loss.backward()
+        adam.step()
 
         return loss
 
@@ -142,7 +151,7 @@ class GraphClassifier(nn.Module):
 
             p_bar.update(1)
 
-            if frame > max(config.batch_size, config.learning_starts):
+            if frame % config.batch_size == 0:
                 loss = self.update_policy(adam, memory, config.batch_size)
 
             p_bar.set_description(f'Loss: {loss}')
