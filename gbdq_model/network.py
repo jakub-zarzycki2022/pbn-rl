@@ -1,52 +1,37 @@
 import torch 
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, EdgeConv
+from torch_geometric.nn import GAT, EdgeConv
+from torch_geometric.data.batch import Batch
 import torch.optim as optim 
 from torch.distributions import Categorical 
-
-class MyBilinear(nn.Module):
-    """
-    Bilinear layer compatible with nn.Sequential.
-    """
-    def __init__(self, input1_dim: int, input2_dim: int, output_dim: int):
-        super(MyBilinear, self).__init__()
-        self.input1_dim = input1_dim
-        self.input2_dim = input2_dim
-        self.output_dim = output_dim
-        self.bilinear = nn.Bilinear(input1_dim, input2_dim, output_dim)
-
-    def forward(self, input_concatenated: torch.Tensor) -> torch.Tensor:
-        # assert input_concatenated.shape[-1] == self.input1_dim + self.input2_dim
-        return self.bilinear(input_concatenated[0], input_concatenated[1])
 
 
 class GraphBranchingQNetwork(nn.Module):
 
-    def __init__(self, observation, action_space_dimension, number_of_actions):
+    def __init__(self, state, action_space_dimension, number_of_actions):
 
         super().__init__()
 
         self.ac_dim = action_space_dimension
         self.n = number_of_actions
 
-        state = observation
-
+        self.state = state
         self.in_size = state * state
 
-        self.conv_model1 = nn.Sequential(nn.Linear(2 * 2, 16),
+        self.conv_model1 = nn.Sequential(nn.Linear(2 * 2, 64),
                                         nn.ReLU(),
-                                        nn.Linear(16, state),
+                                        nn.Linear(64, state),
                                         )
 
-        self.conv_model2 = nn.Sequential(nn.Linear(2 * state, 16),
+        self.conv_model2 = nn.Sequential(nn.Linear(2 * state, 64),
                                          nn.ReLU(),
-                                         nn.Linear(16, state),
+                                         nn.Linear(64, state),
                                          )
 
-        self.conv_model3 = nn.Sequential(nn.Linear(2 * state, 16),
+        self.conv_model3 = nn.Sequential(nn.Linear(2 * state, 64),
                                          nn.ReLU(),
-                                         nn.Linear(16, state),
+                                         nn.Linear(64, state),
                                          )
 
         self.conv1 = EdgeConv(self.conv_model1, aggr="add")

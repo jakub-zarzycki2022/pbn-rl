@@ -44,13 +44,13 @@ class AgentConfig:
                  epsilon_decay=5_000,
                  gamma=None, #deprecated
                  reward_discount_rate=.99,
-                 learning_rate=0.0001,
+                 learning_rate=0.00001,
                  bins=3,
                  target_net_update_freq=5000,
                  memory_size=10**5,
                  batch_size=256,
                  learning_starts=288,
-                 time_steps=1_000_000):
+                 time_steps=10_000_000):
         self.epsilon_start = epsilon_start
         self.epsilon_final = epsilon_final
         self.epsilon_decay = epsilon_decay

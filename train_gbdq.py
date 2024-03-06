@@ -47,7 +47,7 @@ parser.add_argument("--log-dir", default="logs", help="path to save logs")
 args = parser.parse_args()
 
 # # Load env
-env = gym.make(f"gym-PBN/BittnerMultiGeneral", N=args.size, horizon=20)
+env = gym.make(f"gym-PBN/BittnerMultiGeneral", N=args.size, horizon=20, min_attractors=4)
 #env = gym.make(f"gym-PBN/BittnerMulti-7")
 #env = gym.make(f"gym-PBN/BittnerMulti-10")
 #env = gym.make(f"gym-PBN/BittnerMulti-28")
@@ -81,7 +81,7 @@ def state_equals(state1, state2):
 config = AgentConfig()
 
 state_len = env.observation_space.shape[0]
-model = GBDQ((state_len, state_len), state_len + 1, config, env)
+model = GBDQ(state_len, state_len + 1, config, env)
 model.to(device=model.config.device)
 
 # config = model.get_config()

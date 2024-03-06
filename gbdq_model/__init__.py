@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch_geometric.data import Batch, Data
 from torch.distributions import Categorical
 
 from pathlib import Path
@@ -32,8 +33,6 @@ class GBDQ(nn.Module):
         print(observation)
 
         self.action_count = ac
-
-        assert self.action_count == self.state_size + 1
 
         self.q = GraphBranchingQNetwork(observation, ac, config.bins).to(device=config.device)
         self.target = GraphBranchingQNetwork(observation, ac, config.bins).to(device=config.device)
@@ -76,21 +75,8 @@ class GBDQ(nn.Module):
 
             # explore using edit distance
             if np.random.random() < epsilon:
-                potential_actions = [np.random.randint(0, self.action_count, size=self.config.bins) for _ in range(1)]
-                best_action = potential_actions[0]
-                best_distance = len(best_action)
-
-                for potential_action in potential_actions:
-                    new_state = list(state)
-                    for intervention in np.unique(potential_action):
-                        if intervention > 0:
-                            new_state[intervention-1] = 1 - new_state[intervention-1]
-
-                    if self.dst(new_state, target) < best_distance:
-                        best_action = potential_action
-                        best_distance = self.dst(new_state, target)
-
-                action = torch.tensor(best_action, device=self.config.device)
+                action = np.random.randint(0, self.action_count, size=self.config.bins)
+                action = torch.tensor(action, device=self.config.device)
             else:
                 s = np.stack((state, target))
                 x = torch.tensor((state, target), dtype=torch.float, device=self.config.device)
@@ -133,8 +119,8 @@ class GBDQ(nn.Module):
         adam.zero_grad()
         loss.backward()
 
-        for p in self.q.parameters():
-            p.grad.data.clamp_(-10., 10.)
+        # for p in self.q.parameters():
+        #     p.grad.data.clamp_(-10., 10.)
         adam.step()
 
         self.update_counter += 1
