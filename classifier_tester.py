@@ -8,9 +8,7 @@ import gym_PBN
 import torch
 from gym_PBN.envs.bittner.base import findAttractors
 
-from alphaBio import AlphaBio
-from gbdq_model import GBDQ
-from graph_classifier import GraphClassifier
+from graph_classifier.classifier_agent import ClassifierAgent
 
 import math
 
@@ -22,31 +20,29 @@ from matplotlib import pyplot as plt
 
 from gym_PBN.utils.get_attractors_from_cabean import get_attractors
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-n', type=int, required=True)
-parser.add_argument('--model-path', required=True)
-parser.add_argument('--attractors', type=int, default=3)
-args = parser.parse_args()
+# parser = argparse.ArgumentParser()
+# parser.add_argument('-n', type=int, required=True)
+# parser.add_argument('--model-path', required=True)
+# parser.add_argument('--attractors', type=int, default=3)
+# args = parser.parse_args()
 
-# model_cls = GraphClassifier
-# model_name = "GraphClassifier"
+model_cls = ClassifierAgent
+model_name = "ClassifierAgent"
 
-model_cls = GBDQ
-model_name = "GBDQ"
-
-N = args.n
-model_path = args.model_path
+N = 28
+model_path = "models/laptop_tmp_pbn28_classifier/bdq_final.pt"
+min_attractors = 16
+# model_path = args.model_path
 # min_attractors = args.attractors
 
-env = gym.make("gym-PBN/BittnerMultiGeneral", N=N, min_attractors=args.attractors)
+env = gym.make("gym-PBN/BittnerMultiGeneral", N=N, min_attractors=min_attractors)
 env.reset()
 
 DEVICE = 'cpu'
 
 config = AgentConfig()
-model = model_cls(N, N+1, config, env)
-model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
-
+model = model_cls(N, min_attractors, config, env)
+model.load_state_dict(model_path)
 
 action = 0
 (state, target), _ = env.reset()
@@ -82,7 +78,7 @@ failed_pairs = []
 for i in range(1):
     print("testing round ", i)
     for attractor_id, target_id in itertools.product(range(len(env.all_attractors)), repeat=2):
-        #print(f"processing initial_state, target_state = {attractor_id}, {target_id}")
+        print(f"processing initial_state, target_state = {attractor_id}, {target_id}")
         attractor = all_attractors[attractor_id]
         target = all_attractors[target_id]
         target_state = target[0]
@@ -109,9 +105,9 @@ for i in range(1):
             state = env.render()
             #action_named = [gen_ids[a-1] for a in action]
 
-            if count > 100:
+            if count > 10:
                 print(f"failed to converge for {attractor_id}, {target_id}")
-                #print(f"final state was 		     {tuple(state)}")
+                #print(f"final state was {tuple(state)}")
                 failed += 1
                 failed_pairs.append((initial_state, target))
                 #raise ValueError
