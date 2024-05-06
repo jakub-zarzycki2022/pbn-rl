@@ -47,10 +47,11 @@ env = gym.make(f"gym-PBN/ControlPBNEnv",
                genes=[
                    "Pax7", "Myf5", "MyoD1", "MyoG", "miR1",
                    "miR206", "FGF8", "SHH", "Pax3", "Mrf4",
-                   "Mef2c", "Mef2a", "ID3", "WNT", "WNT3a",
-                   "T", "Msg1"
+                   "Mef2c", "Mef2a", "ID3", "WNT"
+                   # , "WNT3a",
+                   # "T", "Msg1"
                ],
-               control_nodes=[11, 10, 7, 6, 12, 8, 13, 14],
+               control_nodes=[6, 7, 8, 10, 11, 12, 13, 14],
                logic_functions=[[('not miR1 and not MyoG and not miR206', 1.0)],  # pax7
                                 [('Pax7 or Pax3 or WNT or SHH', 1.0)],  # myf5
                                 [('not ID3 and (FGF8 or Mef2c or Mef2a or Pax7 or SHH or WNT or Pax3)', 1.0)],  # myod1
@@ -65,14 +66,11 @@ env = gym.make(f"gym-PBN/ControlPBNEnv",
                                 [('Mef2a', 1.0)],  # mef2a(in)
                                 [('ID3', 1.0)],  # id3(in)
                                 [('WNT', 1.0)],  # wnt(in)
-                                [('WNT3a', 1.0)],  # wnt3a(in)
-                                [('WNT3a', 1.0)],  # t
-                                [('WNT3a', 1.0)],  # msg1
+                                # [('WNT3a', 1.0)],  # wnt3a(in)
+                                # [('WNT3a', 1.0)],  # t
+                                # [('WNT3a', 1.0)],  # msg1
                                 ])
 
-# env = gym.make(f"gym-PBN/BittnerMulti-7")
-# env = gym.make(f"gym-PBN/BittnerMulti-10")
-# env = gym.make(f"gym-PBN/BittnerMulti-28")
 
 # set up logs
 TOP_LEVEL_LOG_DIR = Path(args.log_dir)

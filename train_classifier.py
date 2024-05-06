@@ -46,7 +46,7 @@ parser.add_argument("--log-dir", default="logs", help="path to save logs")
 args = parser.parse_args()
 
 # # Load env
-env = gym.make(f"gym-PBN/BittnerMultiGeneral", N=args.size, horizon=20, min_attractors=6)
+env = gym.make(f"gym-PBN/BittnerMultiGeneral", N=args.size, horizon=20, min_attractors=20)
 #env = gym.make(f"gym-PBN/BittnerMulti-7")
 #env = gym.make(f"gym-PBN/BittnerMulti-10")
 #env = gym.make(f"gym-PBN/BittnerMulti-28")
@@ -80,7 +80,7 @@ def state_equals(state1, state2):
 config = AgentConfig()
 
 state_len = env.observation_space.shape[0]
-model = GraphClassifier(7, 6, config, env)
+model = GraphClassifier(28, 20, config, env)
 model.to(device=model.config.device)
 
 # config = model.get_config()
@@ -103,7 +103,7 @@ model.learn(
 )
 
 attrs = env.all_attractors
-print(f"final pseudo0attractors were ({len(env.all_attractors)})")
+print(f"final pseudo attractors were ({len(env.all_attractors)})")
 print(f"final real attractors were ({len(env.real_attractors)})")
 pseudo = set([i[0] for i in env.all_attractors])
 real = set(i[0] for i in env.real_attractors)

@@ -142,3 +142,5 @@ outs/
 # Data
 data/*
 kaban/*
+attractors/*
+modele_andrzeja/*

@@ -75,10 +75,15 @@ class GBDQ(nn.Module):
 
             # explore using edit distance
             if np.random.random() < epsilon:
-                action = np.random.randint(0, self.action_count, size=self.config.bins)
+                bits = []
+                for i in range(len(state)):
+                    if state[i] != target[i]:
+                        bits.append(i+1)
+
+                action = [random.choice(bits) for _ in range(self.config.bins)]
                 action = torch.tensor(action, device=self.config.device)
             else:
-                s = np.stack((state, target))
+                # s = np.stack((state, target))
                 x = torch.tensor((state, target), dtype=torch.float, device=self.config.device)
                 x = x.t()
                 x = x.unsqueeze(dim=0)
@@ -173,24 +178,24 @@ class GBDQ(nn.Module):
             new_state, reward, terminated, truncated, infos = env.step(env_action)
             done = terminated | truncated
 
-            # if terminated:
-            memory_positive.store(Transition(
-                state,
-                target,
-                action,
-                reward,
-                new_state,
-                done
-            ))
-            # else:
-            #     memory_negative.store(Transition(
-            #         state,
-            #         target,
-            #         action,
-            #         reward,
-            #         new_state,
-            #         done
-            #     ))
+            if terminated:
+                memory_positive.store(Transition(
+                    state,
+                    target,
+                    action,
+                    reward,
+                    new_state,
+                    done
+                ))
+            else:
+                memory_negative.store(Transition(
+                    state,
+                    target,
+                    action,
+                    reward,
+                    new_state,
+                    done
+                ))
 
             if truncated:
                 missed[(self.env.state_attractor_id, self.env.target_attractor_id)] += 1
@@ -260,11 +265,13 @@ class GBDQ(nn.Module):
             bot_nodes.append(top_node.index)
 
             for predictor, _, _ in top_node.predictors:
-                 for bot_node_id in predictor:
+                for bot_node_id in predictor:
                     if bot_node_id not in done:
                         done.add(bot_node_id)
                         top_nodes.append(top_node.index)
                         bot_nodes.append(env.graph.getNodeByID(bot_node_id).index)
 
         return torch.tensor([top_nodes, bot_nodes], dtype=torch.long, device=self.config.device)
+        # return torch.tensor(self.env.graph.get_adj_list(), dtype=torch.long, device=self.config.device)
+
 

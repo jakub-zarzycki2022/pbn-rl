@@ -50,12 +50,12 @@ args = parser.parse_args()
 
 with open(args.assa_file, "r") as env_file:
     genes = []
-    logic_funcs = []
+    logic_funcs = defaultdict(list)
 
     for line in env_file:
         line = line.split()
 
-        if len(line)== 0:
+        if len(line) == 0:
             continue
 
         # get all vars
@@ -67,17 +67,26 @@ with open(args.assa_file, "r") as env_file:
                 if line[0] == "end":
                     break
 
-                genes.append(line[0][:-1])
+                if line[0][-1] == ":":
+                    genes.append(line[0][:-1])
+                else:
+                    genes.append(line[0])
 
         if line[0] == "Evolution:":
-            for _ in range(len(genes)):
+            while True:
                 line = next(env_file)
                 line = line.split()
+
+                if len(line) == 0:
+                    continue
 
                 if line[0] == "end":
                     break
 
                 target_gene = line[0].split("=")[0]
+                if line[0].split("=")[1] == "false":
+                    continue
+
                 for i in range(len(line)):
                     sline = line[i].split("=")
                     if sline[-1] == "false":
@@ -85,13 +94,20 @@ with open(args.assa_file, "r") as env_file:
                     else:
                         line[i] = sline[0]
 
-                target_fun = [(" ".join(line[2:]), 1.0)]
-                logic_funcs.append(target_fun)
+                target_fun = " ".join(line[2:])
+                target_fun = target_fun.replace("(", " ( ")
+                target_fun = target_fun.replace(")", " ) ")
+                target_fun = target_fun.replace("|", " or ")
+                target_fun = target_fun.replace("&", " and ")
+                target_fun = target_fun.replace("~", " not ")
+                logic_funcs[target_gene].append((target_fun, 1.0))
 
-print(genes)
-print(logic_funcs)
-print(len(genes))
-print(len(logic_funcs))
+print(list(logic_funcs.keys()))
+print(list(logic_funcs.values()))
+
+
+for i in range(len(genes)):
+    print(list(logic_funcs.keys())[i], list(logic_funcs.values())[i])
 
 
 # Load env
@@ -99,8 +115,8 @@ print(len(logic_funcs))
 # from https://www.frontiersin.org/journals/physiology/articles/10.3389/fphys.2020.00862/full
 env = gym.make(f"gym-PBN/PBNEnv",
                N=args.size,
-               genes=genes,
-               logic_functions=logic_funcs)
+               genes=list(logic_funcs.keys()),
+               logic_functions=list(logic_funcs.values()))
 
 print(type(env.env.env))
 # set up logs

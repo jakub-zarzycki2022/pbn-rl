@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Categorical
 
+
 # set in_channels = 2 in our case
 # they represent source and target state
 # also try using edgeconv instead
@@ -17,7 +18,6 @@ class GCN(torch.nn.Module):
         # self.model = nn.Sequential(nn.Linear(out_channels, 256),
         #                             nn.ReLU(),
         #                             nn.Linear(256, 7))
-
 
     # edge index should be fully connected graph
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:

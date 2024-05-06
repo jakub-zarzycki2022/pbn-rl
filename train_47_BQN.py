@@ -104,7 +104,6 @@ env = gym.make(f"gym-PBN/PBNEnv",
                                [('((v_Th0 and (((v_Th2 and v_IL4) and not v_Th2upregulation) or (((v_IL18 and v_IL4) and not v_IL12) or v_IL10))) and not (v_Th2 and (v_TGFb or (v_Treg or v_IFNg))))', 1.0)],
                                [('(v_Th2 and v_IL4)', 1.0)],
                                [('((v_Th0 and (v_TGFb or v_TLR2)) and not (v_Treg and (v_IL22 or (v_IL23 or (v_TNFa or (v_IL21 or (v_IL6 or v_Th17)))))))', 1.0)]])
-
 print(type(env.env.env))
 # set up logs
 TOP_LEVEL_LOG_DIR = Path(args.log_dir)
@@ -135,7 +134,7 @@ def state_equals(state1, state2):
 config = AgentConfig()
 
 state_len = env.observation_space.shape[0]
-model = model_cls((state_len, state_len), state_len + 1, config, env)
+model = model_cls(state_len, state_len + 1, config, env)
 model.to(device=model.config.device)
 
 # config = model.get_config()

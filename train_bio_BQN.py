@@ -11,12 +11,12 @@ import torch
 from gym_PBN.utils.eval import compute_ssd_hist
 
 import wandb
-from bdq_model import BranchingDQN
+from gbdq_model import GBDQ
 
-from bdq_model.utils import ExperienceReplayMemory, AgentConfig
+from gbdq_model.utils import ExperienceReplayMemory, AgentConfig
 
-model_cls = BranchingDQN
-model_name = "BranchingDQN"
+model_cls = GBDQ
+model_name = "GBDQ"
 
 # Parse settings
 parser = argparse.ArgumentParser(description="Train an RL model for target control.")
@@ -46,12 +46,36 @@ parser.add_argument("--log-dir", default="logs", help="path to save logs")
 
 args = parser.parse_args()
 
-# # Load env
-env = gym.make(f"gym-PBN/BittnerMultiGeneral", N=args.size, horizon=20, min_attractors=7)
-#env = gym.make(f"gym-PBN/BittnerMulti-7")
-#env = gym.make(f"gym-PBN/BittnerMulti-10")
-#env = gym.make(f"gym-PBN/BittnerMulti-28")
-
+# Load env
+# A systems described by biologist we are cooperating with
+# https://docs.google.com/document/d/1ACSjckbhof64rzLWtEUVE0lTKJuVde7dfFSTxNbii3o/edit
+env = gym.make(f"gym-PBN/PBNEnv",
+               N=args.size,
+               genes=[
+                "Pax7", "Myf5", "MyoD1", "MyoG", "miR1", "miR206", "FGF8", "SHH",
+                "Pax3", "Mrf4", "Mef2c", "Mef2a", "ID3", "WNT", "WNT3a", "T", "Msg1"
+               ],
+               logic_functions=[
+                    [('not miR1 and not MyoG and not miR206', 1.0)],  # pax7
+                    [('Pax7 or Pax3 or WNT or SHH', 1.0)],  # myf5
+                    [('not ID3 and (FGF8 or Mef2c or Mef2a or Pax7 or SHH or WNT or Pax3)', 1.0)],  # myod1
+                    [('MyoG or MyoD1', 1.0)],  # myog
+                    [('Myf5', 1.0)],  # mir1
+                    [('MyoG or Myf5 or MyoD1 or Mef2c', 1.0)],  # mir206
+                    [('FGF8', 1.0)],  # fgf8(in)
+                    [('SHH', 1.0)],  # shh(in)
+                    [('Pax3', 1.0)],  # pax3(in)
+                    [('MyoG or Mef2c or Mef2a', 1.0)],  # mrf4
+                    [('Mef2c', 1.0)],  # mef2c(in)
+                    [('Mef2a', 1.0)],  # mef2a(in)
+                    [('ID3', 1.0)],  # id3(in)
+                    [('WNT', 1.0)],  # wnt(in)
+                    [('WNT3a', 1.0)],  # wnt3a(in)
+                    [('WNT3a', 1.0)],  # t
+                    [('WNT3a', 1.0)],  # msg1
+               ])
+print(type(env.env.env))
+print("#attractors = ", len(env.all_attractors))
 # set up logs
 TOP_LEVEL_LOG_DIR = Path(args.log_dir)
 TOP_LEVEL_LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -70,6 +94,7 @@ def get_latest_checkpoint():
     else:
         return None
 
+
 def state_equals(state1, state2):
     for i in range(len(state2)):
         if state1[i] != state2[i]:
@@ -80,7 +105,7 @@ def state_equals(state1, state2):
 config = AgentConfig()
 
 state_len = env.observation_space.shape[0]
-model = BranchingDQN((state_len, state_len), state_len + 1, config, env)
+model = model_cls(state_len, state_len + 1, config, env)
 model.to(device=model.config.device)
 
 # config = model.get_config()
@@ -103,15 +128,13 @@ model.learn(
 )
 
 attrs = env.all_attractors
-print(f"final pseudo attractors were ({len(env.all_attractors)})")
-# print(f"all atractors: {len(env.all_attractors)}")
-# raise ValueError
-# print(f"final real attractors were ({len(env.real_attractors)})")
-# pseudo = set([i[0] for i in env.all_attractors])
-# real = set(i[0] for i in env.real_attractors)
-# print(f"intersection size: {len(pseudo.intersection(real))}")
-#
-# print("skip testig the model")
+print(f"final pseudo0attractors were ({len(env.all_attractors)})")
+print(f"final real attractors were ({len(env.real_attractors)})")
+pseudo = set([i[0] for i in env.all_attractors])
+real = set(i[0] for i in env.real_attractors)
+print(f"intersection size: {len(pseudo.intersection(real))}")
+
+print("skip testig the model")
 
 env.close()
 run.finish()

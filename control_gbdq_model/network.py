@@ -54,7 +54,7 @@ class GraphBranchingQNetwork(nn.Module):
         self.bn3 = nn.BatchNorm1d(state)
 
         self.value_head = nn.Linear(256, 1)
-        self.adv_heads = nn.ModuleList([nn.Linear(256, 1) for _ in range(number_of_actions)])
+        self.adv_heads = nn.ModuleList([nn.Linear(256, 2) for _ in range(number_of_actions)])
 
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor):
         out = self.conv1(x, edge_index)
@@ -69,8 +69,14 @@ class GraphBranchingQNetwork(nn.Module):
         out = self.model(out)
 
         value = self.value_head(out)
+        # print("value:")
+        # print(value)
         advantages = torch.stack([l(out) for l in self.adv_heads], dim=1)
+        # print("advantages")
+        # print(advantages)
 
         q_val = value.unsqueeze(2) + advantages - advantages.mean(2, keepdim=True)
+        # print("qval: ")
+        # print(q_val)
 
         return q_val
