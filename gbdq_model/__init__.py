@@ -124,8 +124,8 @@ class GBDQ(nn.Module):
         adam.zero_grad()
         loss.backward()
 
-        # for p in self.q.parameters():
-        #     p.grad.data.clamp_(-10., 10.)
+        for p in self.q.parameters():
+            p.grad.data.clamp_(-10., 10.)
         adam.step()
 
         self.update_counter += 1
