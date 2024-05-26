@@ -13,13 +13,14 @@ from sympy import symbols
 from sympy.logic import SOPform
 
 from alphaBio import AlphaBio
-# from bdq_model import BranchingDQN
+from bdq_model import BranchingDQN
+from bdq_model.utils import AgentConfig
 from graph_classifier import GraphClassifier
 
 import math
 
 from gbdq_model import GBDQ
-from gbdq_model.utils import ExperienceReplayMemory, AgentConfig
+from gbdq_model.utils import ExperienceReplayMemory#, AgentConfig
 
 import seaborn as sns
 from matplotlib import pyplot as plt
@@ -37,8 +38,11 @@ args = parser.parse_args()
 # model_cls = GraphClassifier
 # model_name = "GraphClassifier"
 
-model_cls = GBDQ
-model_name = "GBDQ"
+# model_cls = GBDQ
+# model_name = "GBDQ"
+
+model_cls = BranchingDQN
+model_name = "BranchingDQN"
 
 N = args.n
 model_path = args.model_path
@@ -520,7 +524,7 @@ env.reset()
 DEVICE = 'cpu'
 
 config = AgentConfig()
-model = model_cls(N, N + 1, config, env)
+model = model_cls((N, N), N + 1, config, env)
 model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
 model.EPSILON = 0
 
@@ -608,34 +612,38 @@ for i in range(1):
 
     print(f"{failed} failed states out of {total}")
 
-# print(f"the avg is {sum(lens.values()) / len(lens)} with len: {len(lens)}")
+print(lens)
+# print(f"the avg is {sum(lens) / len(lens)} with len: {len(lens)}")
 
-# data = defaultdict(int)
-# for i in lens:
-#     data[i] += 1
-#
-# total = sum(lens)
-# last = max(data.keys())
-#
-# x = list(range(1, last + 1))
-#
-# y = [math.ceil(data[i]) for i in x]
-#
-# labels = [i if i % 5 == 0 and i < 20 else '' for i in x]
-# labels[0] = 1
-#
-# for i in range(30, len(x)):
-#     if y[i] > 0:
-#         labels[i] = x[i]
-#         for j in range(1, 5):
-#             labels[i - j] = ''
-#
-# d2 = {'x': x, 'y': y}
-# plt.figure(figsize=(20, 8))
-# ax = sns.barplot(data=d2, x='x', y='y', color='blue', label='big')
-# ax.set_xticklabels(labels)
-# ax.tick_params(labelsize=40)
-# plt.savefig(f'bn{N}.pdf', bbox_inches='tight', pad_inches=0.)
+data = defaultdict(int)
+for i in itertools.chain(*lens):
+    if i == -1:
+        continue
+    data[i] += 1
+
+total = sum(data.values())
+last = max(data.keys())
+
+x = list(range(1, last + 1))
+
+y = [math.ceil(data[i]) for i in x]
+
+labels = [i if i % 5 == 0 else '' for i in range(last+1)]
+print(labels)
+labels[0] = 1
+
+for i in range(30, len(x)):
+    if y[i] > 0:
+        labels[i] = x[i]
+        for j in range(1, 5):
+            labels[i - j] = ''
+
+d2 = {'x': x, 'y': y}
+plt.figure(figsize=(20, 8))
+ax = sns.barplot(data=d2, x='x', y='y', color='blue', label='big')
+ax.set_xticklabels(labels)
+ax.tick_params(labelsize=40)
+plt.savefig(f'bn{N}.pdf', bbox_inches='tight', pad_inches=0.)
 
 
 # for manual fixes
@@ -653,5 +661,5 @@ def avg(l: list):
 
 print(avg(lens))
 
-# sns.distplot(lens, bins="doane", kde=False, hist_kws={"align": "left"})
-# plt.show()
+sns.distplot(lens, bins="doane", kde=False, hist_kws={"align": "left"})
+plt.show()

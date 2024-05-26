@@ -53,26 +53,39 @@ env = gym.make(f"gym-PBN/PBNEnv",
                N=args.size,
                genes=[
                 "Pax7", "Myf5", "MyoD1", "MyoG", "miR1", "miR206", "FGF8", "SHH",
-                "Pax3", "Mrf4", "Mef2c", "Mef2a", "ID3", "WNT", "WNT3a", "T", "Msg1"
+                "Pax3", "Mrf4", "Mef2c", "Mef2a", "ID3", "WNT", "WNT3a", "T", "Msg1",
+                "twist", "pitx2", "mir133a1", "notch", "meox1", "creb1", "wwtr1",
+                "myh10", "myh1", "myh2", "msgn1"
                ],
                logic_functions=[
-                    [('not miR1 and not MyoG and not miR206', 1.0)],  # pax7
+                    [('(not miR1 and not MyoG and not miR206) and (T or notch)', 1.0)],  # pax7
                     [('Pax7 or Pax3 or WNT or SHH', 1.0)],  # myf5
-                    [('not ID3 and (FGF8 or Mef2c or Mef2a or Pax7 or SHH or WNT or Pax3)', 1.0)],  # myod1
-                    [('MyoG or MyoD1', 1.0)],  # myog
+                    [('(not ID3 or not notch or not Pax7) and (FGF8 or Mef2c or Mef2a or SHH or WNT or Pax3 or twist or pitx2)', 1.0)],  # myod1
+                    [('not notch and (MyoG or MyoD1 or twist)', 1.0)],  # myog
                     [('Myf5', 1.0)],  # mir1
                     [('MyoG or Myf5 or MyoD1 or Mef2c', 1.0)],  # mir206
-                    [('FGF8', 1.0)],  # fgf8(in)
-                    [('SHH', 1.0)],  # shh(in)
-                    [('Pax3', 1.0)],  # pax3(in)
-                    [('MyoG or Mef2c or Mef2a', 1.0)],  # mrf4
-                    [('Mef2c', 1.0)],  # mef2c(in)
-                    [('Mef2a', 1.0)],  # mef2a(in)
-                    [('ID3', 1.0)],  # id3(in)
-                    [('WNT', 1.0)],  # wnt(in)
-                    [('WNT3a', 1.0)],  # wnt3a(in)
-                    [('WNT3a', 1.0)],  # t
-                    [('WNT3a', 1.0)],  # msg1
+                    [('FGF8', 1.0)],    # fgf8(in)
+                    [('SHH', 1.0)],     # shh(in)
+                    [('(not miR1 and not miR206) and (meox1 or creb1 or wwtr1)', 1.0)],    # pax3
+                    [('MyoG or Mef2c or Mef2a', 1.0)],  # mrf4 (myf6)
+                    [('not Mrf4 and twist', 1.0)],   # mef2c
+                    [('twist', 1.0)],           # mef2a
+                    [('ID3', 1.0)],             # id3(in)
+                    [('WNT', 1.0)],             # wnt(in)
+                    [('WNT3a', 1.0)],           # wnt3a(in)
+                    [('WNT3a or FGF8', 1.0)],   # t
+                    [('WNT3a', 1.0)],           # msg1
+                    [("WNT", 1.0)],             # twist
+                    [("Pax3", 1.0)],            # pitx2
+                    [("MyoG", 1.0)],            # mir133a1
+                    [("notch", 1.0)],           # notch
+                    [("Pax3", 1.0)],            # meox1
+                    [("creb1", 1.0)],           # creb1
+                    [("wwtr1", 1.0)],           # wwtr1
+                    [("Mef2a", 1.0)],           # myh10
+                    [("Mef2a", 1.0)],           # myh1
+                    [("Mef2a", 1.0)],           # myh2
+                    [("T", 1.0)]                # msgn1
                ])
 print(type(env.env.env))
 print("#attractors = ", len(env.all_attractors))

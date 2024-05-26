@@ -1,24 +1,22 @@
-import os
-import sys
-from collections import deque
-from pickle import Pickler, Unpickler
-from random import shuffle
-from tqdm import tqdm
 import argparse
+import itertools
+import random
+from collections import defaultdict
 from pathlib import Path
 
-import gym_PBN
 import gymnasium as gym
+import gym_PBN
 import numpy as np
+import torch
+from gym_PBN.utils.eval import compute_ssd_hist
 
 import wandb
-from alphaBio import AlphaBio
+from gbdq_model import GBDQ
 
-from alphaBio.utils import ExperienceReplayMemory, AgentConfig
-from alphaBio.MCTS import MCTS
+from gbdq_model.utils import ExperienceReplayMemory, AgentConfig
 
-model_cls = AlphaBio
-model_name = "AlphaBio"
+model_cls = GBDQ
+model_name = "GBDQ"
 
 # Parse settings
 parser = argparse.ArgumentParser(description="Train an RL model for target control.")
@@ -46,14 +44,65 @@ parser.add_argument("--env", type=str, help="the environment to run.")
 
 parser.add_argument("--log-dir", default="logs", help="path to save logs")
 
+parser.add_argument("--assa-file", type=str, required=True)
+
 args = parser.parse_args()
 
-# # Load env
-env = gym.make(f"gym-PBN/BittnerMultiGeneral", N=args.size, horizon=20,  min_attractors=14)
-#env = gym.make(f"gym-PBN/BittnerMulti-7")
-#env = gym.make(f"gym-PBN/BittnerMulti-10")
-#env = gym.make(f"gym-PBN/BittnerMulti-28")
+with open(args.assa_file, "r") as env_file:
+    genes = []
+    logic_funcs = []
 
+    for line in env_file:
+        line = line.split()
+
+        if len(line)== 0:
+            continue
+
+        # get all vars
+        if line[0] == "Vars:":
+            while True:
+                line = next(env_file)
+                line = line.split()
+
+                if line[0] == "end":
+                    break
+
+                genes.append(line[0][:-1])
+
+        if line[0] == "Evolution:":
+            for _ in range(len(genes)):
+                line = next(env_file)
+                line = line.split()
+
+                if line[0] == "end":
+                    break
+
+                target_gene = line[0].split("=")[0]
+                for i in range(len(line)):
+                    sline = line[i].split("=")
+                    if sline[-1] == "false":
+                        line[i] = f"( not {sline[0]} )"
+                    else:
+                        line[i] = sline[0]
+
+                target_fun = [(" ".join(line[2:]), 1.0)]
+                logic_funcs.append(target_fun)
+
+print(genes)
+print(logic_funcs)
+print(len(genes))
+print(len(logic_funcs))
+
+
+# Load env
+# DRUG-SYNERGY-PREDICTION
+# from https://www.frontiersin.org/journals/physiology/articles/10.3389/fphys.2020.00862/full
+env = gym.make(f"gym-PBN/PBNEnv",
+               N=args.size,
+               genes=genes,
+               logic_functions=logic_funcs)
+
+print(type(env.env.env))
 # set up logs
 TOP_LEVEL_LOG_DIR = Path(args.log_dir)
 TOP_LEVEL_LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -75,7 +124,7 @@ def get_latest_checkpoint():
 
 def state_equals(state1, state2):
     for i in range(len(state2)):
-        if state1[i] != state2[i]:
+        if state1[i]  != state2[i]:
             return False
     return True
 
@@ -83,7 +132,7 @@ def state_equals(state1, state2):
 config = AgentConfig()
 
 state_len = env.observation_space.shape[0]
-model = AlphaBio((state_len, state_len), state_len + 1, config, env)
+model = model_cls(state_len, state_len + 1, config, env)
 model.to(device=model.config.device)
 
 # config = model.get_config()
