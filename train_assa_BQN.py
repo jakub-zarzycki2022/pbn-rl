@@ -53,6 +53,7 @@ with open(args.assa_file, "r") as env_file:
     logic_funcs = defaultdict(list)
 
     for line in env_file:
+        print(line, end="")
         line = line.split()
 
         if len(line) == 0:
@@ -109,15 +110,16 @@ print(list(logic_funcs.values()))
 for i in range(len(genes)):
     print(list(logic_funcs.keys())[i], list(logic_funcs.values())[i])
 
+print(logic_funcs)
 
 # Load env
-# DRUG-SYNERGY-PREDICTION
-# from https://www.frontiersin.org/journals/physiology/articles/10.3389/fphys.2020.00862/full
 env = gym.make(f"gym-PBN/PBNEnv",
                N=args.size,
                genes=list(logic_funcs.keys()),
                logic_functions=list(logic_funcs.values()))
 
+print(env)
+raise ValueError
 print(type(env.env.env))
 # set up logs
 TOP_LEVEL_LOG_DIR = Path(args.log_dir)
