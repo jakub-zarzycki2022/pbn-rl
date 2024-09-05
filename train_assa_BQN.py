@@ -95,6 +95,11 @@ with open(args.assa_file, "r") as env_file:
                     else:
                         line[i] = sline[0]
 
+                if target_gene == "EGFR":
+                    target_fun = "True"
+                    logic_funcs[target_gene].append((target_fun, 1.0))
+                    continue
+
                 target_fun = " ".join(line[2:])
                 target_fun = target_fun.replace("(", " ( ")
                 target_fun = target_fun.replace(")", " ) ")
@@ -119,7 +124,7 @@ env = gym.make(f"gym-PBN/PBNEnv",
                logic_functions=list(logic_funcs.values()))
 
 print(env)
-raise ValueError
+# raise ValueError
 print(type(env.env.env))
 # set up logs
 TOP_LEVEL_LOG_DIR = Path(args.log_dir)

@@ -19,8 +19,8 @@ from graph_classifier import GraphClassifier
 
 import math
 
-from gbdq_model import GBDQ
-from gbdq_model.utils import ExperienceReplayMemory#, AgentConfig
+# from gbdq_model import GBDQ
+# from gbdq_model.utils import ExperienceReplayMemory, AgentConfig
 
 import seaborn as sns
 from matplotlib import pyplot as plt
@@ -560,6 +560,8 @@ total = 0
 
 failed_pairs = []
 
+result_matrix = np.zeros((args.attractors, args.attractors))
+
 for i in range(1):
     print("testing round ", i)
     id = -1
@@ -599,6 +601,7 @@ for i in range(1):
                 failed += 1
                 failed_pairs.append((initial_state, target))
                 lens[id].append(-1)
+                result_matrix[attractor_id, target_id] = 101
                 # raise ValueError
                 break
         else:
@@ -607,13 +610,30 @@ for i in range(1):
             for a in actions:
                 # print(a)
                 pass
+            result_matrix[attractor_id, target_id] = 0 if count < 6 else 101
             if count > 0:
                 lens[id].append(count)
 
-    print(f"{failed} failed states out of {total}")
+print(result_matrix)
+# plt.title('')
+plt.imshow(result_matrix, cmap='viridis', interpolation='none')
+plt.xticks([])
+plt.yticks([])
+plt.ylabel('Source Pseudo-Attractor State ID')
+plt.xlabel('Target Pseudo-Attractor State ID')
+plt.colorbar(label='Strategy Length')
+plt.savefig(f'heat_{N}_{args.attractors}_BN.pdf')
+
+raise ValueError
+
+    # print(f"{failed} failed states out of {total}")
 
 print(lens)
+y = [x[0] for x in filter(lambda x: len(x) > 0, lens)]
+print('avg is ', sum(y) / len(y))
 # print(f"the avg is {sum(lens) / len(lens)} with len: {len(lens)}")
+
+exit()
 
 data = defaultdict(int)
 for i in itertools.chain(*lens):
