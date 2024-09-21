@@ -24,12 +24,14 @@ import utils
 class GBDQ(nn.Module):
 
     def __init__(self, observation, ac, config, env):
+        if type(observation) == tuple:
+            observation, _ = observation
         super().__init__()
 
         self.EPSILON = config.epsilon_start
         self.env = env
         self.bins = config.bins
-        self.state_size = observation
+        self.state_size= observation
         print(observation)
 
         self.action_count = ac
@@ -74,14 +76,13 @@ class GBDQ(nn.Module):
         with torch.no_grad():
             # exploration probability
             epsilon = self.decrement_epsilon()
-
             # explore using edit distance
             if np.random.random() < epsilon:
-                for i in range(len(state)):
-                    if state[i] != target[i]:
-                        bits.append(i+1)
+            #     for i in range(len(state)):
+            #         if state[i] != target[i]:
+            #             bits.append(i+1)
 
-                action = [random.choice(bits) for _ in range(self.config.bins)]
+                action = [random.choice(range(self.action_count)) for _ in range(self.config.bins)]
                 action = torch.tensor(action, device=self.config.device)
             else:
                 # s = np.stack((state, target))
@@ -256,23 +257,23 @@ class GBDQ(nn.Module):
         torch.save(self.state_dict(), path)
 
     def get_adj_list(self):
-        # env = self.env
-        # top_nodes = []
-        # bot_nodes = []
-        #
-        # for top_node in env.graph.nodes:
-        #     done = set()
-        #     top_nodes.append(top_node.index)
-        #     bot_nodes.append(top_node.index)
-        #
-        #     for predictor, _, _ in top_node.predictors:
-        #         for bot_node_id in predictor:
-        #             if bot_node_id not in done:
-        #                 done.add(bot_node_id)
-        #                 top_nodes.append(top_node.index)
-        #                 bot_nodes.append(env.graph.getNodeByID(bot_node_id).index)
-        #
-        # return torch.tensor([top_nodes, bot_nodes], dtype=torch.long, device=self.config.device)
+        env = self.env
+        top_nodes = []
+        bot_nodes = []
+
+        for top_node in env.graph.nodes:
+            done = set()
+            top_nodes.append(top_node.index)
+            bot_nodes.append(top_node.index)
+
+            for predictor, _, _ in top_node.predictors:
+                for bot_node_id in predictor:
+                    if bot_node_id not in done:
+                        done.add(bot_node_id)
+                        top_nodes.append(top_node.index)
+                        bot_nodes.append(env.graph.getNodeByID(bot_node_id).index)
+
+        return torch.tensor([top_nodes, bot_nodes], dtype=torch.long, device=self.config.device)
         return torch.tensor(self.env.graph.get_adj_list(), dtype=torch.long, device=self.config.device)
 
 

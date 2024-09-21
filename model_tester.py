@@ -14,16 +14,15 @@ from sympy.logic import SOPform
 
 from alphaBio import AlphaBio
 from bdq_model import BranchingDQN
-from bdq_model.utils import AgentConfig
 from graph_classifier import GraphClassifier
 
 import math
 
-# from gbdq_model import GBDQ
-# from gbdq_model.utils import ExperienceReplayMemory, AgentConfig
+from gbdq_model import GBDQ
 
 import seaborn as sns
 from matplotlib import pyplot as plt
+import pickle as pkl
 
 from gym_PBN.utils.get_attractors_from_cabean import get_attractors
 
@@ -31,25 +30,33 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-n', type=int, required=True)
 parser.add_argument('--model-path', required=True)
 parser.add_argument('--attractors', type=int, default=3)
-parser.add_argument('--assa-file', type=str)
+parser.add_argument('--runs', type=int, default=1)
+parser.add_argument('--assa-file', type=str, default=None)
+parser.add_argument('--matlab-file', type=str, default=None)
+
 
 args = parser.parse_args()
 
 # model_cls = GraphClassifier
 # model_name = "GraphClassifier"
 
-# model_cls = GBDQ
-# model_name = "GBDQ"
-
-model_cls = BranchingDQN
-model_name = "BranchingDQN"
 
 N = args.n
 model_path = args.model_path
 # min_attractors = args.attractors
 
-if True:
+if args.assa_file is None and args.matlab_file is None:
+    if args.n >= 28:
+        model_cls = GBDQ
+        model_name = "GBDQ"
+        from gbdq_model.utils import AgentConfig
+    else:
+        from bdq_model.utils import AgentConfig
+        model_cls = BranchingDQN
+        model_name = "BranchingDQN"
+
     env = gym.make("gym-PBN/BittnerMultiGeneral", N=N, min_attractors=args.attractors)
+
 
 # A systems described by biologist we are cooperating with
 # https://docs.google.com/document/d/1ACSjckbhof64rzLWtEUVE0lTKJuVde7dfFSTxNbii3o/edit
@@ -327,7 +334,10 @@ if False:
                    ])
 
 # load ispl model
-if False:
+if args.assa_file is not None and args.matlab_file is None:
+    from bdq_model.utils import AgentConfig
+    model_cls = BranchingDQN
+    model_name = "BranchingDQN"
     with open(args.assa_file, "r") as env_file:
         genes = []
         logic_funcs = defaultdict(list)
@@ -396,7 +406,11 @@ if False:
                    min_attractors=args.attractors)
 
 # load assa-matlab model
-if False:
+if args.matlab_file is not None:
+    model_cls = GBDQ
+    model_name = "GBDQ"
+    from gbdq_model.utils import AgentConfig
+
     def translate(sym, logic_function):
         """
         We need variable names to start with letter.
@@ -561,12 +575,22 @@ total = 0
 failed_pairs = []
 
 result_matrix = np.zeros((args.attractors, args.attractors))
+data = defaultdict(int)
 
-for i in range(1):
+save_path = f'data/results/pbn_{args.n}_{args.attractors}.pkl'
+try:
+    with open(save_path, 'rb') as f:
+        result_matrix, data = pkl.load(f)
+    runs = 0
+except FileNotFoundError:
+    runs = args.runs
+
+for i in range(runs):
     print("testing round ", i)
     id = -1
     for attractor_id, target_id in itertools.product(range(args.attractors), repeat=2):
         # print(f"processing initial_state, target_state = {attractor_id}, {target_id}")
+        model.EPSILON = 0.
         id += 1
         attractor = all_attractors[attractor_id]
         target = all_attractors[target_id]
@@ -601,7 +625,8 @@ for i in range(1):
                 failed += 1
                 failed_pairs.append((initial_state, target))
                 lens[id].append(-1)
-                result_matrix[attractor_id, target_id] = 101
+                result_matrix[attractor_id, target_id] += 101
+                data[101] += 1
                 # raise ValueError
                 break
         else:
@@ -610,36 +635,37 @@ for i in range(1):
             for a in actions:
                 # print(a)
                 pass
-            result_matrix[attractor_id, target_id] = 0 if count < 6 else 101
+            result_matrix[attractor_id, target_id] += count
+            data[int(count)] += 1
             if count > 0:
                 lens[id].append(count)
 
+result_matrix /= args.runs
 print(result_matrix)
+
+print(f"{failed} state pairs failed out of {args.attractors * args.attractors}")
+with open(save_path, 'wb') as f:
+    pkl.dump((result_matrix, data), f)
+
 # plt.title('')
-plt.imshow(result_matrix, cmap='viridis', interpolation='none')
-plt.xticks([])
-plt.yticks([])
+
+plt.imshow(result_matrix, cmap='viridis', vmin=0, vmax=100)
+plt.grid(None)
+if args.attractors > 30:
+    plt.yticks(range(args.attractors), [f"A{i}" if i % 15 == 0 else "" for i in range(1, args.attractors + 1)],
+               fontsize=12)
+    plt.xticks(range(args.attractors), [f"A{i}" if i % 15 == 0 else "" for i in range(1, args.attractors + 1)],
+               fontsize=12)
+else:
+    plt.yticks(range(args.attractors), [f"A{i}" if i % 1 == 0 else "" for i in range(1, args.attractors + 1)],
+               fontsize=12)
+    plt.xticks(range(args.attractors), [f"A{i}" if i % 1 == 0 else "" for i in range(1, args.attractors + 1)],
+               fontsize=12)
 plt.ylabel('Source Pseudo-Attractor State ID')
 plt.xlabel('Target Pseudo-Attractor State ID')
 plt.colorbar(label='Strategy Length')
 plt.savefig(f'heat_{N}_{args.attractors}_BN.pdf')
 
-raise ValueError
-
-    # print(f"{failed} failed states out of {total}")
-
-print(lens)
-y = [x[0] for x in filter(lambda x: len(x) > 0, lens)]
-print('avg is ', sum(y) / len(y))
-# print(f"the avg is {sum(lens) / len(lens)} with len: {len(lens)}")
-
-exit()
-
-data = defaultdict(int)
-for i in itertools.chain(*lens):
-    if i == -1:
-        continue
-    data[i] += 1
 
 total = sum(data.values())
 last = max(data.keys())
@@ -661,25 +687,29 @@ for i in range(30, len(x)):
 d2 = {'x': x, 'y': y}
 plt.figure(figsize=(20, 8))
 ax = sns.barplot(data=d2, x='x', y='y', color='blue', label='big')
-ax.set_xticklabels(labels)
+plt.xticks(range(last), [i + 1 if i % 5 == 4 or i == 0 else '' for i in range(last)])
+# ax.set_xticklabels(labels)
 ax.tick_params(labelsize=40)
+
+# sns.distplot(lens, bins="doane", kde=False, hist_kws={"align": "left"})
 plt.savefig(f'bn{N}.pdf', bbox_inches='tight', pad_inches=0.)
-
-
-# for manual fixes
-def avg(l: list):
-    s = 0
-    count = 0
-    for x in l:
-        for y in x:
-            if y > 0:
-                s += y
-            count += 1
-
-    return s / count
-
-
-print(avg(lens))
-
-sns.distplot(lens, bins="doane", kde=False, hist_kws={"align": "left"})
+plt.savefig('test.pdf', bbox_inches='tight', pad_inches=0.)
 plt.show()
+
+print(data)
+s = 0
+div = 0
+for k in data:
+    v = data[k]
+    if k == 0 or k > 100:
+        continue
+    s += k * v
+    div += v
+
+check_sum = 0
+for k in data:
+    check_sum += data[k]
+
+avg = s / div
+print(f'average is {s} / {div} = ', avg)
+print(f"generated histogram with {check_sum} data points")
