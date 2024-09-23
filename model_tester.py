@@ -407,9 +407,9 @@ if args.assa_file is not None and args.matlab_file is None:
 
 # load assa-matlab model
 if args.matlab_file is not None:
-    model_cls = GBDQ
-    model_name = "GBDQ"
-    from gbdq_model.utils import AgentConfig
+    model_cls = BranchingDQN
+    model_name = "BranchingDQN"
+    from bdq_model.utils import AgentConfig
 
     def translate(sym, logic_function):
         """
