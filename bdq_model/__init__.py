@@ -13,7 +13,7 @@ import numpy as np
 import gym
 import random
 
-from .network import DuelingNetwork, BranchingQNetwork
+from .network import BranchingQNetwork
 # from .utils import ExperienceReplayMemory
 
 from .memory import ExperienceReplay, PrioritisedER, Transition
@@ -181,7 +181,7 @@ class BranchingDQN(nn.Module):
 
             if len(self.env.all_attractors) > self.attractor_count:
                 self.attractor_count = len(self.env.all_attractors)
-                self.EPSILON = max(self.EPSILON, 0.2)
+                self.EPSILON = max(self.EPSILON, 0.3)
 
             done = terminated | truncated
             ep_len += 1

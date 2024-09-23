@@ -11,12 +11,12 @@ import torch
 from gym_PBN.utils.eval import compute_ssd_hist
 
 import wandb
-from bdq_model import BranchingDQN
+from gbdq_model import GBDQ
 
-from bdq_model.utils import ExperienceReplayMemory, AgentConfig
+from gbdq_model.utils import ExperienceReplayMemory, AgentConfig
 
-model_cls = BranchingDQN
-model_name = "BranchingDQN"
+model_cls = GBDQ
+model_name = "GBDQ"
 
 # Parse settings
 parser = argparse.ArgumentParser(description="Train an RL model for target control.")
@@ -47,7 +47,7 @@ parser.add_argument("--log-dir", default="logs", help="path to save logs")
 args = parser.parse_args()
 
 # # Load env
-env = gym.make(f"gym-PBN/GTEx")
+env = gym.make(f"gym-PBN/GTEx", horizon=20, min_attractors=3)
 
 # set up logs
 TOP_LEVEL_LOG_DIR = Path(args.log_dir)
@@ -77,7 +77,7 @@ def state_equals(state1, state2):
 config = AgentConfig()
 
 state_len = env.observation_space.shape[0]
-model = BranchingDQN((state_len, state_len), state_len + 1, config, env)
+model = model_cls(state_len, state_len + 1, config, env)
 model.to(device=model.config.device)
 
 # config = model.get_config()

@@ -47,7 +47,7 @@ parser.add_argument("--log-dir", default="logs", help="path to save logs")
 args = parser.parse_args()
 
 # # Load env
-env = gym.make(f"gym-PBN/BittnerMultiGeneral", N=args.size, horizon=20)
+env = gym.make(f"gym-PBN/BittnerMultiGeneral", N=args.size, horizon=20, min_attractors=7)
 #env = gym.make(f"gym-PBN/BittnerMulti-7")
 #env = gym.make(f"gym-PBN/BittnerMulti-10")
 #env = gym.make(f"gym-PBN/BittnerMulti-28")
@@ -103,13 +103,15 @@ model.learn(
 )
 
 attrs = env.all_attractors
-print(f"final pseudo0attractors were ({len(env.all_attractors)})")
-print(f"final real attractors were ({len(env.real_attractors)})")
-pseudo = set([i[0] for i in env.all_attractors])
-real = set(i[0] for i in env.real_attractors)
-print(f"intersection size: {len(pseudo.intersection(real))}")
-
-print("skip testig the model")
+print(f"final pseudo attractors were ({len(env.all_attractors)})")
+# print(f"all atractors: {len(env.all_attractors)}")
+# raise ValueError
+# print(f"final real attractors were ({len(env.real_attractors)})")
+# pseudo = set([i[0] for i in env.all_attractors])
+# real = set(i[0] for i in env.real_attractors)
+# print(f"intersection size: {len(pseudo.intersection(real))}")
+#
+# print("skip testig the model")
 
 env.close()
 run.finish()

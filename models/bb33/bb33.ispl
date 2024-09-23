@@ -1,0 +1,113 @@
+Agent M
+	Vars:
+		v_AP: boolean;
+		v_AgAb: boolean;
+		v_BC: boolean;
+		v_Bb: boolean;
+		v_C: boolean;
+		v_DCI: boolean;
+		v_DCII: boolean;
+		v_DP: boolean;
+		v_EC: boolean;
+		v_IFNgI: boolean;
+		v_IFNgII: boolean;
+		v_IL10I: boolean;
+		v_IL10II: boolean;
+		v_IL12I: boolean;
+		v_IL12II: boolean;
+		v_IL4I: boolean;
+		v_IL4II: boolean;
+		v_IgA: boolean;
+		v_IgG: boolean;
+		v_MPI: boolean;
+		v_NE: boolean;
+		v_Oag: boolean;
+		v_PH: boolean;
+		v_PIC: boolean;
+		v_T0: boolean;
+		v_TTSSI: boolean;
+		v_TTSSII: boolean;
+		v_Th1I: boolean;
+		v_Th1II: boolean;
+		v_Th2I: boolean;
+		v_Th2II: boolean;
+		v_TrI: boolean;
+		v_TrII: boolean;
+	end Vars
+	Actions = {none};
+	Protocol:
+		Other: {none};
+	end Protocol
+	Evolution:
+		v_AP=true  if ((v_IgG&((v_C&v_Bb)&(v_MPI&v_Th1I)))|(v_AgAb&((v_MPI&v_Th1I)&v_Bb)))=true;
+		v_AP=false if ((v_IgG&((v_C&v_Bb)&(v_MPI&v_Th1I)))|(v_AgAb&((v_MPI&v_Th1I)&v_Bb)))=false;
+		v_AgAb=true  if ((v_IgA&v_Bb)|(v_IgG&v_Bb))=true;
+		v_AgAb=false if ((v_IgA&v_Bb)|(v_IgG&v_Bb))=false;
+		v_BC=true  if (v_T0|v_BC)=true;
+		v_BC=false if (v_T0|v_BC)=false;
+		v_Bb=true  if (v_Bb&~v_PH)=true;
+		v_Bb=false if (v_Bb&~v_PH)=false;
+		v_C=true  if ((v_Bb&~v_Oag)|(v_IgG&v_AgAb))=true;
+		v_C=false if ((v_Bb&~v_Oag)|(v_IgG&v_AgAb))=false;
+		v_DCI=true  if ((v_IFNgI&v_Bb)|(v_PIC&v_Bb))=true;
+		v_DCI=false if ((v_IFNgI&v_Bb)|(v_PIC&v_Bb))=false;
+		v_DCII=true  if v_DCI=true;
+		v_DCII=false if v_DCI=false;
+		v_DP=true  if (v_NE&v_TTSSI)=true;
+		v_DP=false if (v_NE&v_TTSSI)=false;
+		v_EC=true  if v_Bb=true;
+		v_EC=false if v_Bb=false;
+		v_IFNgI=true  if (((v_DCI&~v_IL4I)|(v_MPI&~v_IL4I))|(v_Th1I&~(v_IL10I|v_IL4I)))=true;
+		v_IFNgI=false if (((v_DCI&~v_IL4I)|(v_MPI&~v_IL4I))|(v_Th1I&~(v_IL10I|v_IL4I)))=false;
+		v_IFNgII=true  if v_IFNgI=true;
+		v_IFNgII=false if v_IFNgI=false;
+		v_IL10I=true  if (((v_Th2I&v_TTSSI)|v_TrI)|v_MPI)=true;
+		v_IL10I=false if (((v_Th2I&v_TTSSI)|v_TrI)|v_MPI)=false;
+		v_IL10II=true  if v_IL10I=true;
+		v_IL10II=false if v_IL10I=false;
+		v_IL12I=true  if ((v_DCII&v_T0)&~v_IL4II)=true;
+		v_IL12I=false if ((v_DCII&v_T0)&~v_IL4II)=false;
+		v_IL12II=true  if ((v_DCII&v_T0)&~v_IL4II)=true;
+		v_IL12II=false if ((v_DCII&v_T0)&~v_IL4II)=false;
+		v_IL4I=true  if v_IL4II=true;
+		v_IL4I=false if v_IL4II=false;
+		v_IL4II=true  if ((v_Th2II&~(v_IL12II|v_IFNgII))|((v_DCII&v_T0)&~(v_IL12II|v_IFNgII)))=true;
+		v_IL4II=false if ((v_Th2II&~(v_IL12II|v_IFNgII))|((v_DCII&v_T0)&~(v_IL12II|v_IFNgII)))=false;
+		v_IgA=true  if ((v_IgA&v_Bb)|(v_BC&v_Bb))=true;
+		v_IgA=false if ((v_IgA&v_Bb)|(v_BC&v_Bb))=false;
+		v_IgG=true  if (v_IgG|v_BC)=true;
+		v_IgG=false if (v_IgG|v_BC)=false;
+		v_MPI=true  if ((v_IFNgI&v_Bb)|(v_PIC&v_Bb))=true;
+		v_MPI=false if ((v_IFNgI&v_Bb)|(v_PIC&v_Bb))=false;
+		v_NE=true  if v_PIC=true;
+		v_NE=false if v_PIC=false;
+		v_Oag=true  if v_Bb=true;
+		v_Oag=false if v_Bb=false;
+		v_PH=true  if (v_AP&v_Bb)=true;
+		v_PH=false if (v_AP&v_Bb)=false;
+		v_PIC=true  if (((v_DP&~v_IL10I)|(v_EC&~v_IL10I))|(v_AP&~v_IL10I))=true;
+		v_PIC=false if (((v_DP&~v_IL10I)|(v_EC&~v_IL10I))|(v_AP&~v_IL10I))=false;
+		v_T0=true  if v_DCII=true;
+		v_T0=false if v_DCII=false;
+		v_TTSSI=true  if (v_Bb&~(v_IgA|v_IgG))=true;
+		v_TTSSI=false if (v_Bb&~(v_IgA|v_IgG))=false;
+		v_TTSSII=true  if v_TTSSI=true;
+		v_TTSSII=false if v_TTSSI=false;
+		v_Th1I=true  if v_Th1II=true;
+		v_Th1I=false if v_Th1II=false;
+		v_Th1II=true  if (v_DCII&(v_IL12II&v_T0))=true;
+		v_Th1II=false if (v_DCII&(v_IL12II&v_T0))=false;
+		v_Th2I=true  if v_Th2II=true;
+		v_Th2I=false if v_Th2II=false;
+		v_Th2II=true  if ((v_DCII&v_T0)&~v_IL12II)=true;
+		v_Th2II=false if ((v_DCII&v_T0)&~v_IL12II)=false;
+		v_TrI=true  if v_TrII=true;
+		v_TrI=false if v_TrII=false;
+		v_TrII=true  if (v_DCII&v_T0)=true;
+		v_TrII=false if (v_DCII&v_T0)=false;
+	end Evolution
+end Agent
+
+InitStates
+		M.v_AP=true or M.v_AP=false;
+end InitStates
