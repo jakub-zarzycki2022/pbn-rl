@@ -652,14 +652,14 @@ with open(save_path, 'wb') as f:
 plt.imshow(result_matrix, cmap='viridis', vmin=0, vmax=100)
 plt.grid(None)
 if args.attractors > 30:
-    plt.yticks(range(args.attractors), [f"A{i}" if i % 15 == 0 else "" for i in range(1, args.attractors + 1)],
+    plt.yticks(range(args.attractors), [f"A{i}" if i % 20 == 0 else "" for i in range(1, args.attractors + 1)],
                fontsize=12)
-    plt.xticks(range(args.attractors), [f"A{i}" if i % 15 == 0 else "" for i in range(1, args.attractors + 1)],
+    plt.xticks(range(args.attractors), [f"A{i}" if i % 20 == 0 else "" for i in range(1, args.attractors + 1)],
                fontsize=12)
 else:
-    plt.yticks(range(args.attractors), [f"A{i}" if i % 1 == 0 else "" for i in range(1, args.attractors + 1)],
+    plt.yticks(range(args.attractors), [f"A{i}" if i % 10 == 0 else "" for i in range(1, args.attractors + 1)],
                fontsize=12)
-    plt.xticks(range(args.attractors), [f"A{i}" if i % 1 == 0 else "" for i in range(1, args.attractors + 1)],
+    plt.xticks(range(args.attractors), [f"A{i}" if i % 10 == 0 else "" for i in range(1, args.attractors + 1)],
                fontsize=12)
 plt.ylabel('Source Pseudo-Attractor State ID')
 plt.xlabel('Target Pseudo-Attractor State ID')
@@ -687,7 +687,7 @@ for i in range(30, len(x)):
 d2 = {'x': x, 'y': y}
 plt.figure(figsize=(20, 8))
 ax = sns.barplot(data=d2, x='x', y='y', color='blue', label='big')
-plt.xticks(range(last), [i + 1 if i % 5 == 4 or i == 0 else '' for i in range(last)])
+plt.xticks(range(last), [i + 1 if i % 1 == 0 or i == 0 else '' for i in range(last)])
 # ax.set_xticklabels(labels)
 ax.tick_params(labelsize=40)
 
