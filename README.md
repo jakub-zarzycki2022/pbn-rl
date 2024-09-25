@@ -26,13 +26,15 @@ This project extends the original methods introduced in [Papagiannis, Georgios, 
     ```
 
 # Running
+All scripts use networks generated from Bittner Melanoma dataset. To use them with another model specify the ispl file with --assa-file flag
+
 - Use `train_BDQ.py` to train multiaction BDQ agent. 
   Use AgentConfig class in `bdq_model/utils.py` file for config.
   E.g.:
   ```sh
-  python train_BDQ.py --size 28 --exp-name test --env zzz
+  python train_BDQ.py --size 28 --exp-name test 
   ```
 - Use `model_tester.py` to test trained agent
   ```sh
-  python model_tester.py -n 7 --model-path models/pbn7/bdq_final.pt --attractors 4
+  python model_tester.py -n 7 --model-path models/pbn7/bdq_final.pt --attractors 4 --mode pbn
   ```
