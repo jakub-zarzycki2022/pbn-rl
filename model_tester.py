@@ -30,9 +30,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-n', type=int, required=True)
 parser.add_argument('--model-path', required=True)
 parser.add_argument('--attractors', type=int, default=3)
-parser.add_argument('--runs', type=int, default=1)
+parser.add_argument('--runs', type=int, default=10)
 parser.add_argument('--assa-file', type=str, default=None)
 parser.add_argument('--matlab-file', type=str, default=None)
+parser.add_argument('--mode', type=str, required=True)
 
 
 args = parser.parse_args()
@@ -40,6 +41,12 @@ args = parser.parse_args()
 # model_cls = GraphClassifier
 # model_name = "GraphClassifier"
 
+args.mode = args.mode.lower()
+
+if args.mode not in {'pbn', 'bn'}:
+    raise ValueError("wrong network mode. Use BN / PBN")
+
+n_pred = 3 if args.mode == 'pbn' else 1
 
 N = args.n
 model_path = args.model_path
@@ -643,35 +650,39 @@ for i in range(runs):
 result_matrix /= args.runs
 print(result_matrix)
 
-print(f"{failed} state pairs failed out of {args.attractors * args.attractors}")
+print(f"{data[101]} state pairs failed out of {args.attractors * args.attractors * args.runs}, "
+      f"{data[101] * 100 / (args.attractors * args.attractors * args.runs)}%")
+
 with open(save_path, 'wb') as f:
-    pkl.dump((result_matrix, data), f)
+    save_matrix = result_matrix * args.runs
+    pkl.dump((save_matrix, data), f)
 
 # plt.title('')
 
 plt.imshow(result_matrix, cmap='viridis', vmin=0, vmax=100)
 plt.grid(None)
 if args.attractors > 30:
-    plt.yticks(range(args.attractors), [f"A{i}" if i % 20 == 0 else "" for i in range(1, args.attractors + 1)],
-               fontsize=12)
-    plt.xticks(range(args.attractors), [f"A{i}" if i % 20 == 0 else "" for i in range(1, args.attractors + 1)],
-               fontsize=12)
-else:
     plt.yticks(range(args.attractors), [f"A{i}" if i % 10 == 0 else "" for i in range(1, args.attractors + 1)],
                fontsize=12)
     plt.xticks(range(args.attractors), [f"A{i}" if i % 10 == 0 else "" for i in range(1, args.attractors + 1)],
                fontsize=12)
+else:
+    plt.yticks(range(args.attractors), [f"A{i}" if i % 1 == 0 else "" for i in range(1, args.attractors + 1)],
+               fontsize=12)
+    plt.xticks(range(args.attractors), [f"A{i}" if i % 1 == 0 else "" for i in range(1, args.attractors + 1)],
+               fontsize=12)
 plt.ylabel('Source Pseudo-Attractor State ID')
 plt.xlabel('Target Pseudo-Attractor State ID')
 plt.colorbar(label='Strategy Length')
-plt.savefig(f'heat_{N}_{args.attractors}_BN.pdf')
+# plt.subplots_adjust(left=0., right=1.0, top=0.99, bottom=0.1)
+plt.tight_layout(h_pad=0, w_pad=0, pad=0)
+plt.savefig(f'heat_{N}_{args.attractors}_{"" if args.mode == "bn" else "P"}BN.pdf')
 
-
+data.pop(101)
 total = sum(data.values())
 last = max(data.keys())
 
 x = list(range(1, last + 1))
-
 y = [math.ceil(data[i]) for i in x]
 
 labels = [i if i % 5 == 0 else '' for i in range(last+1)]
@@ -692,9 +703,11 @@ plt.xticks(range(last), [i + 1 if i % 1 == 0 or i == 0 else '' for i in range(la
 ax.tick_params(labelsize=40)
 
 # sns.distplot(lens, bins="doane", kde=False, hist_kws={"align": "left"})
-plt.savefig(f'bn{N}.pdf', bbox_inches='tight', pad_inches=0.)
+plt.tight_layout()
+plt.margins(x=0)
+plt.savefig(f'{args.mode}{N}.pdf', bbox_inches='tight', pad_inches=0.)
 plt.savefig('test.pdf', bbox_inches='tight', pad_inches=0.)
-plt.show()
+# plt.show()
 
 print(data)
 s = 0
